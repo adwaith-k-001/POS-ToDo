@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  ARCHIVED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum RepeatPattern {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum HistoryAction {
+  CREATED
+  UPDATED
+  COMPLETED
+  REOPENED
+  PRIORITY_CHANGED
+  DEADLINE_CHANGED
+  ARCHIVED
+  RESTORED
+  AREA_CHANGED
+  TAG_ADDED
+  TAG_REMOVED
+  STATUS_CHANGED
+  TITLE_CHANGED
+  DESCRIPTION_CHANGED
+}
+
+// ─── Core Models ──────────────────────────────────────────────────────────────
+
+model Task {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  status      TaskStatus @default(TODO)
+  priority    Priority   @default(MEDIUM)
+  deadline    DateTime?
+  icon        String?
+  color       String?
+
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
+
+  // Hierarchy — self-referential for subtasks
+  parentTaskId String?
+  parentTask   Task?   @relation("SubTasks", fields: [parentTaskId], references: [id])
+  subTasks     Task[]  @relation("SubTasks")
+
+  // Recurring — tracks which original task spawned this occurrence
+  repeatEnabled     Boolean        @default(false)
+  repeatPattern     RepeatPattern?
+  recurringParentId String?
+  recurringParent   Task?          @relation("RecurringOccurrences", fields: [recurringParentId], references: [id])
+  recurringChildren Task[]         @relation("RecurringOccurrences")
+
+  // Relations
+  areaId  String?
+  area    Area?       @relation(fields: [areaId], references: [id])
+  tags    TaskTag[]
+  history TaskHistory[]
+}
+
+model Area {
+  id    String  @id @default(cuid())
+  name  String  @unique
+  color String  @default("#6366f1")
+  icon  String?
+  tasks Task[]
+}
+
+model Tag {
+  id    String    @id @default(cuid())
+  name  String    @unique
+  color String    @default("#6366f1")
+  tasks TaskTag[]
+}
+
+model TaskTag {
+  taskId String
+  tagId  String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, tagId])
+}
+
+model TaskHistory {
+  id        String        @id @default(cuid())
+  taskId    String
+  task      Task          @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  action    HistoryAction
+  oldValue  String?
+  newValue  String?
+  timestamp DateTime      @default(now())
+}

@@ -1,0 +1,26 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getAreas, createArea } from "@/services/area.service";
+import { createAreaSchema } from "@/lib/validations";
+
+export async function GET() {
+  try {
+    const areas = await getAreas();
+    return NextResponse.json({ data: areas });
+  } catch {
+    return NextResponse.json({ error: "Failed to fetch areas" }, { status: 500 });
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const parsed = createAreaSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 });
+    }
+    const area = await createArea(parsed.data);
+    return NextResponse.json({ data: area }, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: "Failed to create area" }, { status: 500 });
+  }
+}
