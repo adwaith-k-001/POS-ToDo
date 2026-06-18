@@ -14,7 +14,11 @@ export async function GET(req: NextRequest) {
     const inbox = searchParams.get("inbox") === "true";
     const includeArchived = searchParams.get("includeArchived") === "true";
 
-    const tasks = await getTasks({ status, priority, areaId, tagId, search, inbox, includeArchived });
+    const goalId = searchParams.get("goalId") ?? undefined;
+    const dueBefore = searchParams.get("dueBefore") ? new Date(searchParams.get("dueBefore")!) : undefined;
+    const dueAfter = searchParams.get("dueAfter") ? new Date(searchParams.get("dueAfter")!) : undefined;
+
+    const tasks = await getTasks({ status, priority, areaId, tagId, search, inbox, includeArchived, goalId, dueBefore, dueAfter });
     return NextResponse.json({ data: tasks });
   } catch (error) {
     return NextResponse.json({ error: "Failed to fetch tasks" }, { status: 500 });

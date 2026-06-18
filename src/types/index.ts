@@ -8,6 +8,8 @@ import type {
   Priority,
   RepeatPattern,
   HistoryAction,
+  Goal,
+  GoalStatus,
 } from "@/generated/prisma/client";
 
 export type {
@@ -20,6 +22,8 @@ export type {
   Priority,
   RepeatPattern,
   HistoryAction,
+  Goal,
+  GoalStatus,
 };
 
 // Task with all relations loaded
@@ -29,6 +33,11 @@ export type TaskWithRelations = Task & {
   subTasks: TaskWithRelations[];
   history?: TaskHistory[];
   _count?: { subTasks: number };
+};
+
+export type GoalWithTasks = Goal & {
+  tasks: TaskWithRelations[];
+  _count: { tasks: number };
 };
 
 export type AreaWithCount = Area & {

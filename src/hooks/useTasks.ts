@@ -7,9 +7,12 @@ interface UseTasksOptions {
   status?: string[];
   areaId?: string;
   tagId?: string;
+  goalId?: string;
   search?: string;
   inbox?: boolean;
   includeArchived?: boolean;
+  dueBefore?: Date;
+  dueAfter?: Date;
 }
 
 export function useTasks(options: UseTasksOptions = {}) {
@@ -22,11 +25,14 @@ export function useTasks(options: UseTasksOptions = {}) {
     options.status?.forEach((s) => params.append("status", s));
     if (options.areaId) params.set("areaId", options.areaId);
     if (options.tagId) params.set("tagId", options.tagId);
+    if (options.goalId) params.set("goalId", options.goalId);
     if (options.search) params.set("search", options.search);
     if (options.inbox) params.set("inbox", "true");
     if (options.includeArchived) params.set("includeArchived", "true");
+    if (options.dueBefore) params.set("dueBefore", options.dueBefore.toISOString());
+    if (options.dueAfter) params.set("dueAfter", options.dueAfter.toISOString());
     return `/api/tasks?${params.toString()}`;
-  }, [options.status?.join(), options.areaId, options.tagId, options.search, options.inbox, options.includeArchived]);
+  }, [options.status?.join(), options.areaId, options.tagId, options.goalId, options.search, options.inbox, options.includeArchived, options.dueBefore?.toISOString(), options.dueAfter?.toISOString()]);
 
   const fetchTasks = useCallback(async () => {
     setLoading(true);

@@ -23,6 +23,7 @@ export interface TaskFilters {
   priority?: Priority[];
   areaId?: string;
   tagId?: string;
+  goalId?: string;
   parentTaskId?: string | null;
   inbox?: boolean; // area is null AND parentTaskId is null
   search?: string;
@@ -57,6 +58,10 @@ export async function getTasks(filters: TaskFilters = {}): Promise<TaskWithRelat
 
   if (filters.tagId) {
     where.tags = { some: { tagId: filters.tagId } };
+  }
+
+  if (filters.goalId !== undefined) {
+    where.goalId = filters.goalId || null;
   }
 
   if (filters.parentTaskId !== undefined) {

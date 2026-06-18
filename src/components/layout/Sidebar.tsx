@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Inbox, Sun, CalendarDays, CheckSquare,
   Layers, Tag, BarChart2, Settings,
   Target, Repeat2, Calendar, FileText, DollarSign, Users, Bot,
-  ChevronRight,
+  ChevronRight, CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
@@ -23,7 +23,9 @@ const primaryNav: NavItem[] = [
   { label: "Inbox", href: "/inbox", icon: Inbox },
   { label: "Today", href: "/today", icon: Sun },
   { label: "Upcoming", href: "/upcoming", icon: CalendarDays },
+  { label: "Goals", href: "/goals", icon: Target },
   { label: "Tasks", href: "/tasks", icon: CheckSquare },
+  { label: "Completed", href: "/completed", icon: CheckCircle2 },
   { label: "Areas", href: "/areas", icon: Layers },
   { label: "Tags", href: "/tags", icon: Tag },
 ];
@@ -33,7 +35,6 @@ const analyticsNav: NavItem[] = [
 ];
 
 const futureNav: NavItem[] = [
-  { label: "Goals", href: "/goals", icon: Target, comingSoon: true },
   { label: "Habits", href: "/habits", icon: Repeat2, comingSoon: true },
   { label: "Calendar", href: "/calendar", icon: Calendar, comingSoon: true },
   { label: "Notes", href: "/notes", icon: FileText, comingSoon: true },

@@ -31,6 +31,12 @@ enum RepeatPattern {
   YEARLY
 }
 
+enum GoalStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
 enum HistoryAction {
   CREATED
   UPDATED
@@ -80,6 +86,8 @@ model Task {
   // Relations
   areaId  String?
   area    Area?       @relation(fields: [areaId], references: [id])
+  goalId  String?
+  goal    Goal?       @relation(fields: [goalId], references: [id])
   tags    TaskTag[]
   history TaskHistory[]
 }
@@ -106,6 +114,19 @@ model TaskTag {
   tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([taskId, tagId])
+}
+
+model Goal {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  color       String     @default("#6366f1")
+  icon        String?
+  status      GoalStatus @default(ACTIVE)
+  targetDate  DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  tasks       Task[]
 }
 
 model TaskHistory {
