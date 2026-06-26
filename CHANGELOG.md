@@ -5,6 +5,49 @@ Format: `## [Date] [Time IST] — Title` followed by what changed and why.
 
 ---
 
+## [2026-06-26] — Performance: Eliminate Auth Overhead and Redundant API Calls
+
+**Reason**: Deployed app had ~1 s navigation delay and 1–2 s data load time caused by redundant Supabase auth network calls, disabled client-side caching, and unnecessary parallel API requests.
+
+### Authentication overhead — removed
+
+- `src/proxy.ts`: Switched from `supabase.auth.getUser()` to `supabase.auth.getSession()`. `getUser()` makes an outbound HTTP request to Supabase on every request (page navigations and every API call). `getSession()` reads the session from the cookie locally (~0 ms). The proxy only needs to know if a session exists for redirect decisions; full server-side JWT verification still happens in every API route via `getAuthenticatedUser()`.
+- `src/lib/supabase/server.ts`: Added `getCachedUser()` — a `React.cache()`-wrapped function that deduplicates the `getUser()` network call within a single RSC render. Previously `(app)/layout.tsx` and each `page.tsx` each created a new Supabase client and called `getUser()` independently (2–3 network calls per page). Now both share the same memoized result (1 call).
+- All server-component pages updated to use `getCachedUser()` instead of `createClient()` + `getUser()`:
+  - `src/app/(app)/layout.tsx`
+  - `src/app/(app)/page.tsx` (Dashboard)
+  - `src/app/(app)/analytics/page.tsx`
+  - `src/app/(app)/tracker/page.tsx`
+  - `src/app/(app)/areas/page.tsx`
+  - `src/app/(app)/tags/page.tsx`
+  - `src/app/(app)/tasks/[id]/page.tsx`
+  - `src/app/(app)/areas/[id]/page.tsx`
+  - `src/app/(app)/tags/[id]/page.tsx`
+- Net reduction: 3 → 1 Supabase `getUser()` network calls per server-component page request; 2 → 1 per API call.
+
+### `force-dynamic` removed from pages where it was redundant
+
+All of these pages call `getCachedUser()` → `createClient()` → `await cookies()`, which already opts them into dynamic rendering regardless of the flag. The actual cost of `force-dynamic` is zeroing the Next.js Router Cache TTL (client-side cache). Removing it restores the default 30 s TTL, so re-navigating to a recently visited page within a session is served from cache instantly.
+
+Removed from: `page.tsx`, `analytics/page.tsx`, `tracker/page.tsx`, `areas/page.tsx`, `tags/page.tsx`.
+
+### Client-side API consolidation
+
+- Added `src/app/api/context/route.ts` — `GET /api/context` returns `{ areas, tags }` in one authenticated request (one `getUser()` call, one Prisma query per resource in parallel).
+- Added `src/hooks/useFormData.ts` — replaces the `useAreas()` + `useTags()` pair in components that only need form dropdown data (not CRUD).
+- Updated `TaskList`, `UpcomingPage`, `TaskDetailClient`, `GoalDetailPage` to use `useFormData()`. Pages that previously made 3 parallel client-side API calls on mount (tasks + areas + tags) now make 2 (tasks + context).
+- `useAreas` and `useTags` hooks retained unchanged for `AreasClient` and `TagsClient` which need full CRUD operations.
+
+### Hard navigation replaced
+
+- `src/app/(app)/goals/[id]/page.tsx` (subtask rows): replaced `window.location.href = '/tasks/...'` with `router.push('/tasks/...')`. The hard navigation was triggering a full page reload on every subtask click, bypassing the SPA router, discarding cached state, and paying the full cold-start cost again.
+
+### Build verification
+- `npm run build` passes with zero TypeScript errors across all 33 routes.
+- New route `/api/context` appears in the route table as `ƒ` (dynamic).
+
+---
+
 ## [2026-06-26] — Production Migration: Supabase Auth + PostgreSQL
 
 **Session duration**: Multi-session (two Claude Code conversations)

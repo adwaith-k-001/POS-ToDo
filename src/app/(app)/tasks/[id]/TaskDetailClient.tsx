@@ -19,8 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { formatDate, formatRelative, completionLatencyDays } from "@/lib/utils";
-import { useAreas } from "@/hooks/useAreas";
-import { useTags } from "@/hooks/useTags";
+import { useFormData } from "@/hooks/useFormData";
 import type { TaskWithRelations, TaskHistory } from "@/types";
 import type { CreateTaskInput } from "@/lib/validations";
 
@@ -48,8 +47,7 @@ export function TaskDetailClient({ task: initialTask }: Props) {
   const [task, setTask] = useState(initialTask);
   const [editOpen, setEditOpen] = useState(false);
   const [subtaskOpen, setSubtaskOpen] = useState(false);
-  const { areas } = useAreas();
-  const { tags } = useTags();
+  const { areas, tags } = useFormData();
 
   const callApi = async (body: Record<string, unknown>) => {
     const res = await fetch(`/api/tasks/${task.id}`, {

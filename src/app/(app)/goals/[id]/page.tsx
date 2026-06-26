@@ -14,8 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { TaskForm } from "@/components/tasks/TaskForm";
-import { useAreas } from "@/hooks/useAreas";
-import { useTags } from "@/hooks/useTags";
+import { useFormData } from "@/hooks/useFormData";
 import { cn, formatDate, isOverdue } from "@/lib/utils";
 import type { GoalWithTasks, TaskWithRelations } from "@/types";
 import type { CreateTaskInput } from "@/lib/validations";
@@ -27,8 +26,7 @@ export default function GoalDetailPage() {
   const [loading, setLoading] = useState(true);
   const [taskOpen, setTaskOpen] = useState(false);
   const [subtaskFor, setSubtaskFor] = useState<TaskWithRelations | null>(null);
-  const { areas } = useAreas();
-  const { tags } = useTags();
+  const { areas, tags } = useFormData();
 
   const fetchGoal = useCallback(async () => {
     const res = await fetch(`/api/goals/${id}`);
@@ -204,6 +202,7 @@ function GoalTaskRow({
   onDelete: (id: string) => void;
   onNavigate: () => void;
 }) {
+  const router = useRouter();
   const isDone = task.status === "COMPLETED";
   const overdue = isOverdue(task.deadline) && !isDone;
   const isSubtask = !!task.parentTaskId;
@@ -294,7 +293,7 @@ function GoalTaskRow({
                 "flex items-center gap-3 rounded-lg border border-slate-800/60 bg-slate-900/60 px-4 py-2 cursor-pointer hover:bg-slate-800/40 transition-colors",
                 sub.status === "COMPLETED" && "opacity-50"
               )}
-              onClick={() => window.location.href = `/tasks/${sub.id}`}
+              onClick={() => router.push(`/tasks/${sub.id}`)}
             >
               <button
                 onClick={(e) => { e.stopPropagation(); onToggle(sub); }}

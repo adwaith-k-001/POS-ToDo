@@ -1,13 +1,12 @@
 import { notFound, redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getCachedUser } from "@/lib/supabase/server";
 import { getTagById } from "@/services/tag.service";
 import { TaskList } from "@/components/tasks/TaskList";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 export default async function TagDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCachedUser();
   if (!user) redirect("/login");
 
   const { id } = await params;

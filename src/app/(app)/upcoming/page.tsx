@@ -8,8 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { TaskCard } from "@/components/tasks/TaskCard";
 import { TaskForm } from "@/components/tasks/TaskForm";
 import { useTasks } from "@/hooks/useTasks";
-import { useAreas } from "@/hooks/useAreas";
-import { useTags } from "@/hooks/useTags";
+import { useFormData } from "@/hooks/useFormData";
 
 type Range = "week" | "month" | "quarter" | "all";
 
@@ -55,8 +54,7 @@ export default function UpcomingPage() {
     dueBefore,
   });
 
-  const { areas } = useAreas();
-  const { tags } = useTags();
+  const { areas, tags } = useFormData();
 
   const handleComplete = async (id: string) => {
     const task = tasks.find((t) => t.id === id);

@@ -1,6 +1,5 @@
-export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getCachedUser } from "@/lib/supabase/server";
 import { getOverviewStats } from "@/services/analytics.service";
 import { getTasks } from "@/services/task.service";
 import { formatDate, isOverdue, PRIORITY_COLORS } from "@/lib/utils";
@@ -27,8 +26,7 @@ async function StatCard({ label, value, icon: Icon, color }: {
 }
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCachedUser();
   if (!user) redirect("/login");
 
   const [stats, recentTasks, upcomingTasks] = await Promise.all([

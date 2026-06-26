@@ -1,12 +1,10 @@
-export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getCachedUser } from "@/lib/supabase/server";
 import { getHabits, getMonthEntries, getMonthStats } from "@/services/tracker.service";
 import { TrackerClient } from "./TrackerClient";
 
 export default async function TrackerPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCachedUser();
   if (!user) redirect("/login");
 
   const today = new Date();

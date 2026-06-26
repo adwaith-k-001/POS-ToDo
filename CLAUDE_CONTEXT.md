@@ -137,6 +137,7 @@ Mark1/
 │   │       ├── tags/[route.ts, [id]/route.ts]
 │   │       ├── goals/[route.ts, [id]/route.ts]
 │   │       ├── analytics/route.ts
+│   │       ├── context/route.ts       # GET /api/context → { areas, tags } — one auth call for both
 │   │       ├── tracker/[route.ts, entries/route.ts]
 │   │       └── user/onboard/route.ts  # Seeds default habits after register
 │   ├── components/
@@ -150,13 +151,13 @@ Mark1/
 │   │   ├── goal.service.ts
 │   │   ├── analytics.service.ts
 │   │   └── tracker.service.ts     # Also exports seedDefaultHabits(userId)
-│   ├── hooks/                     # React hooks (useAreas, useTags, useTasks, useGoals)
+│   ├── hooks/                     # React hooks (useAreas, useTags, useTasks, useGoals, useFormData)
 │   ├── lib/
 │   │   ├── prisma.ts              # Prisma singleton with PgBouncer adapter
 │   │   ├── auth-utils.ts          # getAuthenticatedUser() — used in every API route
 │   │   ├── supabase/
 │   │   │   ├── client.ts          # Browser (client components)
-│   │   │   └── server.ts          # Server (RSC / API routes / proxy)
+│   │   │   └── server.ts          # Server (RSC / API routes / proxy); exports getCachedUser()
 │   │   ├── validations.ts         # Zod schemas
 │   │   └── utils.ts               # cn(), formatDate(), isOverdue(), etc.
 │   ├── types/index.ts             # Shared TypeScript types
@@ -263,3 +264,16 @@ Default habits seeded per user on first login: Reading (30 min), Learning (30 mi
 - Sidebar is `"use client"` (needs `useRouter` for logout), but `userEmail` is passed from the server layout so there's no client-side session fetch in the sidebar.
 - `Area.tasks` in `getAreaById` returns non-archived tasks only (filtered in service). The `_count` reflects ALL tasks (including archived).
 - PostgreSQL mode: `mode: "insensitive"` is used in `contains` searches for case-insensitive matching.
+
+### Auth patterns — important
+
+- **In server components (RSC)**: use `getCachedUser()` from `@/lib/supabase/server`. It is wrapped in `React.cache()` and deduplicates the `getUser()` network call across layout + page within a single render. Do NOT call `createClient()` + `getUser()` directly in pages.
+- **In API routes**: use `getAuthenticatedUser()` from `@/lib/auth-utils`. `React.cache()` does not apply in route handlers so the per-route call is unavoidable and correct.
+- **In `proxy.ts`**: uses `getSession()` (local cookie read, no network). Sufficient for redirect decisions. Full JWT verification happens in API routes.
+- **Do not add `force-dynamic`** to pages that call `getCachedUser()` / `createClient()` — `await cookies()` already makes them dynamic. `force-dynamic` zeroes the client-side Router Cache TTL, killing fast re-navigation.
+
+### Client-side data fetching patterns
+
+- **`useFormData()`** (`src/hooks/useFormData.ts`): fetches `{ areas, tags }` in one request from `GET /api/context`. Use this wherever you need areas + tags only for `TaskForm` dropdowns (no CRUD). Currently used in: `TaskList`, `UpcomingPage`, `TaskDetailClient`, `GoalDetailPage`.
+- **`useAreas()` / `useTags()`**: retain full CRUD methods. Use only in components that create/update/delete areas or tags (`AreasClient`, `TagsClient`).
+- Do not call `useAreas()` + `useTags()` together — use `useFormData()` instead to avoid duplicate API calls.

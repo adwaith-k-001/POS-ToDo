@@ -8,8 +8,7 @@ import { TaskForm } from "./TaskForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTasks } from "@/hooks/useTasks";
-import { useAreas } from "@/hooks/useAreas";
-import { useTags } from "@/hooks/useTags";
+import { useFormData } from "@/hooks/useFormData";
 import type { TaskStatus, Priority } from "@/types";
 
 interface TaskListProps {
@@ -59,8 +58,7 @@ export function TaskList({
     search: search || undefined,
   });
 
-  const { areas } = useAreas();
-  const { tags } = useTags();
+  const { areas, tags } = useFormData();
 
   const filteredTasks = tasks.filter((t) => {
     if (priorityFilter !== "all" && t.priority !== priorityFilter) return false;

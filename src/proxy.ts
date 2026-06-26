@@ -25,7 +25,9 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // getSession reads the cookie locally — no network call — sufficient for redirect decisions.
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
 
   const pathname = request.nextUrl.pathname;
   const isAuthPath = AUTH_PATHS.some((p) => pathname.startsWith(p));
