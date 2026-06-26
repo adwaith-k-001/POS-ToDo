@@ -2,10 +2,10 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  LayoutDashboard, Inbox, Sun, CalendarDays, CheckSquare,
-  Layers, Tag, BarChart2, Settings, LogOut,
+  LayoutDashboard, Inbox, CheckSquare,
+  BarChart2, Settings, LogOut,
   Target, Repeat2, Calendar, FileText, DollarSign, Users, Bot,
-  ChevronRight, CheckCircle2, Grid3x3,
+  ChevronRight, Grid3x3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
@@ -20,16 +20,11 @@ interface NavItem {
 }
 
 const primaryNav: NavItem[] = [
-  { label: "Dashboard", href: "/", icon: LayoutDashboard },
+  { label: "Focus Mode", href: "/", icon: LayoutDashboard },
   { label: "Inbox", href: "/inbox", icon: Inbox },
-  { label: "Today", href: "/today", icon: Sun },
-  { label: "Upcoming", href: "/upcoming", icon: CalendarDays },
-  { label: "Goals", href: "/goals", icon: Target },
   { label: "Tasks", href: "/tasks", icon: CheckSquare },
-  { label: "Completed", href: "/completed", icon: CheckCircle2 },
+  { label: "Goals", href: "/goals", icon: Target },
   { label: "Tracker", href: "/tracker", icon: Grid3x3 },
-  { label: "Areas", href: "/areas", icon: Layers },
-  { label: "Tags", href: "/tags", icon: Tag },
 ];
 
 const analyticsNav: NavItem[] = [

@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useAreas } from "@/hooks/useAreas";
-import type { AreaWithCount } from "@/types";
 
 const PRESET_COLORS = [
   "#6366f1", "#8b5cf6", "#ec4899", "#f43f5e",
@@ -16,14 +15,12 @@ const PRESET_COLORS = [
 
 const PRESET_ICONS = ["📚", "💪", "💼", "💰", "❤️", "🧠", "🎯", "🏠"];
 
-export function AreasClient({ areas: initial }: { areas: AreaWithCount[] }) {
-  const { areas, createArea, deleteArea } = useAreas();
+export function AreasClient() {
+  const { areas, loading, createArea, deleteArea } = useAreas();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [name, setName] = useState("");
   const [color, setColor] = useState(PRESET_COLORS[0]);
   const [icon, setIcon] = useState(PRESET_ICONS[0]);
-
-  const displayed = areas.length > 0 ? areas : initial;
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,8 +80,16 @@ export function AreasClient({ areas: initial }: { areas: AreaWithCount[] }) {
         </Dialog>
       </div>
 
+      {loading ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-20 rounded-xl bg-slate-800/50 animate-pulse" />
+          ))}
+        </div>
+      ) : null}
+
       <div className="grid gap-3 sm:grid-cols-2">
-        {displayed.map((area) => (
+        {areas.map((area) => (
           <Link
             key={area.id}
             href={`/areas/${area.id}`}
@@ -105,7 +110,7 @@ export function AreasClient({ areas: initial }: { areas: AreaWithCount[] }) {
         ))}
       </div>
 
-      {displayed.length === 0 && (
+      {!loading && areas.length === 0 && (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-800 py-16 text-center">
           <p className="text-slate-500 text-sm">No areas yet. Create your first life category.</p>
         </div>

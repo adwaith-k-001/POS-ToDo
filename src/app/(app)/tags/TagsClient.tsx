@@ -7,20 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useTags } from "@/hooks/useTags";
-import type { TagWithCount } from "@/types";
 
 const PRESET_COLORS = [
   "#6366f1", "#8b5cf6", "#ec4899", "#f43f5e",
   "#f97316", "#eab308", "#22c55e", "#06b6d4",
 ];
 
-export function TagsClient({ tags: initial }: { tags: TagWithCount[] }) {
-  const { tags, createTag } = useTags();
+export function TagsClient() {
+  const { tags, loading, createTag } = useTags();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [name, setName] = useState("");
   const [color, setColor] = useState(PRESET_COLORS[0]);
-
-  const displayed = tags.length > 0 ? tags : initial;
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,8 +64,16 @@ export function TagsClient({ tags: initial }: { tags: TagWithCount[] }) {
         </Dialog>
       </div>
 
+      {loading ? (
+        <div className="flex gap-3">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-9 w-24 rounded-lg bg-slate-800/50 animate-pulse" />
+          ))}
+        </div>
+      ) : null}
+
       <div className="flex flex-wrap gap-3">
-        {displayed.map((tag) => (
+        {tags.map((tag) => (
           <Link
             key={tag.id}
             href={`/tags/${tag.id}`}
@@ -79,7 +84,7 @@ export function TagsClient({ tags: initial }: { tags: TagWithCount[] }) {
             <span className="text-xs text-slate-600">{tag._count.tasks}</span>
           </Link>
         ))}
-        {displayed.length === 0 && (
+        {!loading && tags.length === 0 && (
           <p className="text-slate-500 text-sm">No tags yet.</p>
         )}
       </div>
