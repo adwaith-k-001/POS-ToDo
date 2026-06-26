@@ -5,6 +5,61 @@ Format: `## [Date] [Time IST] — Title` followed by what changed and why.
 
 ---
 
+## [2026-06-26] — Performance: Measured Bottlenecks, Indexes, Region Config
+
+**Reason**: After the first round of performance fixes, slowness persisted. Ran a full measurement suite (`scripts/perf-test.mjs`) to get actual timings before making any changes.
+
+### Measurements (from perf-test.mjs — run against real Supabase/DB)
+
+| Layer | Cold | Warm avg |
+|-------|------|----------|
+| `supabase.auth.getUser()` network call | 686–1100 ms | **215 ms** |
+| PgBouncer connection acquisition | 642 ms | — |
+| Raw `SELECT 1` round-trip (Tokyo) | 142 ms | **155 ms** |
+| `getOverviewStats` (5 parallel COUNTs) | — | **1173 ms** |
+| `getAreas + getTags` parallel | — | 171 ms |
+
+Key findings:
+1. `getAuthenticatedUser()` still called `getUser()` in every API route — adds 215 ms per client-side API request.
+2. `getOverviewStats` fired 5 parallel `prisma.task.count()` calls → PgBouncer queue contention → 1173 ms for what should be one query.
+3. `EXPLAIN` confirmed **full sequential scan on `Task.userId`** — zero indexes on the most-queried column.
+4. Supabase project is in AWS `ap-northeast-1` (Tokyo). Vercel's default region is `iad1` (US East). Every auth call and every DB query pays US→Tokyo cross-region latency (~200 ms).
+5. `TaskDetailClient.callApi()` made 2 HTTP calls per action (PATCH then GET), costing ~400 ms extra per task mutation.
+6. `tracker/route.ts` called `getHabits` once, then `getMonthEntries` re-fetched habit IDs again — redundant DB query.
+
+### Fixes applied
+
+**`src/lib/auth-utils.ts`** — switched `getUser()` → `getSession()`.
+`getSession()` decodes the JWT from the HTTP-only cookie locally (~0 ms). `getUser()` made a network round-trip to Supabase auth (~215 ms). Every API route calls `getAuthenticatedUser()` on each request, so this saves ~215 ms per API call. The JWT expires in 1 hour; acceptable staleness window for a personal single-user app.
+
+**`src/services/analytics.service.ts` — `getOverviewStats`** rewritten as a single `$queryRaw` with PostgreSQL `FILTER` aggregation. 5 parallel `COUNT` queries → 1 query. Expected reduction: ~1173 ms → ~155 ms on analytics page.
+
+**`prisma/schema.prisma` + migration `20260626014249_add_performance_indexes`** — added indexes:
+- `Task(userId)` — eliminates full table scan on every task query
+- `Task(userId, status)` — covers filtered views (inbox, today, upcoming, completed)
+- `Task(userId, deadline)` — covers upcoming/today deadline range queries
+- `Goal(userId)` — covers goals list
+- `Habit(userId)` — covers tracker
+- `TaskHistory(taskId)` — covers task detail history lookup
+
+**`vercel.json`** — `"regions": ["hnd1"]` deploys Vercel functions to Tokyo (hnd1), co-located with Supabase `ap-northeast-1`. Reduces both auth and DB network latency from ~200 ms to ~20 ms once redeployed.
+
+**`src/app/api/tasks/[id]/route.ts` (PATCH handler)** — after `updateTask`, now calls `getTaskById` server-side to return the full task with history. Previously, PATCH returned the task without history, so `TaskDetailClient` had to make a second GET request to get the updated history. One server-side DB query is cheaper than a full client HTTP round-trip.
+
+**`src/app/(app)/tasks/[id]/TaskDetailClient.tsx`** — `callApi()` now uses the PATCH response directly instead of making a second `fetch(/api/tasks/[id])`. Saves one full HTTP round-trip (~215 ms auth + ~155 ms DB) per task action.
+
+**`src/services/tracker.service.ts`** — `getMonthEntries` accepts optional `knownHabitIds` parameter. When provided, skips the redundant `habit.findMany` for IDs.
+
+**`src/app/api/tracker/route.ts`** — passes `habits.map(h => h.id)` to `getMonthEntries`. The habit list was already fetched one line above; no second query needed.
+
+**`scripts/perf-test.mjs`** — committed measurement script. Run with `node --env-file=.env scripts/perf-test.mjs` to measure Supabase auth latency, PgBouncer round-trip, query patterns, and EXPLAIN plans.
+
+### Build verification
+- `npm run build` passes with zero TypeScript errors.
+- Migration applied successfully: `npx prisma migrate dev` confirmed all 6 indexes created.
+
+---
+
 ## [2026-06-26] — Performance: Eliminate Auth Overhead and Redundant API Calls
 
 **Reason**: Deployed app had ~1 s navigation delay and 1–2 s data load time caused by redundant Supabase auth network calls, disabled client-side caching, and unnecessary parallel API requests.

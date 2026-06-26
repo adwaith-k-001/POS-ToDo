@@ -205,7 +205,7 @@ node scripts/seed.mjs   # creates areas, tags, and sample tasks via API
    - If Supabase returns a session immediately (email confirmation OFF): `POST /api/user/onboard` seeds default habits.
    - If email confirmation is ON: user confirms email → Supabase redirects to `/auth/callback?code=...` → callback exchanges code, seeds habits, redirects to `/`.
 2. **Login (`/login`)**: `supabase.auth.signInWithPassword()`. Supabase sets HTTP-only session cookie.
-3. **Session refresh**: `src/proxy.ts` runs on every request and calls `supabase.auth.getUser()` which silently refreshes the session token via the cookie.
+3. **Session refresh**: `src/proxy.ts` runs on every request and calls `supabase.auth.getSession()` (local cookie decode, ~0 ms). Note: `getUser()` was intentionally replaced with `getSession()` in both the proxy and `getAuthenticatedUser()` to eliminate 200ms+ network round-trips to Supabase auth on every request. The tradeoff is that token revocation isn't detected until JWT expiry (1h). Acceptable for a personal single-user app.
 4. **Logout (Sidebar)**: `supabase.auth.signOut()` clears cookie, `router.push('/login')`.
 5. **Forgot password (`/forgot-password`)**: `resetPasswordForEmail()` with redirect to `/auth/callback?next=/reset-password`.
 6. **Reset password (`/reset-password`)**: User lands here via email link (session established by callback), calls `supabase.auth.updateUser({ password })`.
@@ -249,6 +249,7 @@ Default habits seeded per user on first login: Reading (30 min), Learning (30 mi
 3. Add all 5 env vars (see Environment Variables section above)
 4. Vercel auto-detects Next.js; no build config needed
 5. `npm run build` is the build command (already set by Vercel)
+6. **Region**: `vercel.json` sets `"regions": ["hnd1"]` (Tokyo) to match Supabase `ap-northeast-1`. Reduces auth + DB latency from ~200 ms (US East default) to ~20 ms.
 
 **Supabase Auth redirect URLs to configure in Supabase dashboard:**
 - Site URL: `https://your-vercel-domain.vercel.app`
@@ -264,6 +265,11 @@ Default habits seeded per user on first login: Reading (30 min), Learning (30 mi
 - Sidebar is `"use client"` (needs `useRouter` for logout), but `userEmail` is passed from the server layout so there's no client-side session fetch in the sidebar.
 - `Area.tasks` in `getAreaById` returns non-archived tasks only (filtered in service). The `_count` reflects ALL tasks (including archived).
 - PostgreSQL mode: `mode: "insensitive"` is used in `contains` searches for case-insensitive matching.
+- **`getAnalyticsSummary`** calls 5 sub-functions in `Promise.all`. `getOverviewStats` uses a single `$queryRaw` with `FILTER` aggregation — do not revert to multiple `prisma.task.count()` calls as that causes PgBouncer queue contention (measured: 5 parallel counts = ~1173 ms vs single query = ~155 ms).
+- **`PATCH /api/tasks/[id]`** returns the full task with history (calls `getTaskById` after `updateTask`). This is intentional — `TaskDetailClient` uses the PATCH response directly and does not make a second GET. Do not remove the `getTaskById` call from the PATCH handler.
+- **`getMonthEntries`** accepts an optional `knownHabitIds` parameter. Always pass `habits.map(h => h.id)` when you already have the habits (as `tracker/route.ts` does) to avoid a redundant DB round-trip.
+- **Performance measurement**: run `node --env-file=.env scripts/perf-test.mjs` to re-measure Supabase auth latency, PgBouncer round-trip, and query patterns after any change.
+- **Database indexes** (as of migration `20260626014249`): Task has indexes on `(userId)`, `(userId,status)`, `(userId,deadline)`. Goal/Habit have `(userId)`. TaskHistory has `(taskId)`. Do not add queries that filter on `Task.userId` without one of these covering indexes.
 
 ### Auth patterns — important
 
