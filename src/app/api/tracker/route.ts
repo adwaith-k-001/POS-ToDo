@@ -13,8 +13,9 @@ export async function GET(req: NextRequest) {
     const month = parseInt(searchParams.get("month") ?? String(today.getMonth() + 1), 10);
 
     const habits = await getHabits(userId!);
+    const habitIds = habits.map((h) => h.id);
     const [entries, stats] = await Promise.all([
-      getMonthEntries(userId!, year, month),
+      getMonthEntries(userId!, year, month, habitIds),
       getMonthStats(userId!, habits, year, month),
     ]);
 

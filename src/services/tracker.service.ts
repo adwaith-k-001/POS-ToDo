@@ -59,12 +59,13 @@ export async function getHabits(userId: string): Promise<Habit[]> {
 export async function getMonthEntries(
   userId: string,
   year: number,
-  month: number
+  month: number,
+  knownHabitIds?: string[]
 ): Promise<HabitEntryData[]> {
   const from = new Date(Date.UTC(year, month - 1, 1));
   const to = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
 
-  const habitIds = (
+  const habitIds = knownHabitIds ?? (
     await prisma.habit.findMany({ where: { userId }, select: { id: true } })
   ).map((h) => h.id);
 

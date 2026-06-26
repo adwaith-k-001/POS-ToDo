@@ -11,6 +11,5 @@ export async function GET() {
     getAreas(userId!),
     getTags(userId!),
   ]);
-
   return NextResponse.json({ areas, tags });
 }

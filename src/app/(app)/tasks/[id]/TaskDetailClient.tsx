@@ -57,9 +57,8 @@ export function TaskDetailClient({ task: initialTask }: Props) {
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error);
-    // Re-fetch full task with history
-    const fresh = await fetch(`/api/tasks/${task.id}`).then((r) => r.json());
-    setTask(fresh.data);
+    // PATCH now returns the full task with history — no second GET needed.
+    setTask(json.data);
   };
 
   const handleComplete = () =>

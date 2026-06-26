@@ -28,7 +28,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (!parsed.success) {
       return NextResponse.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 });
     }
-    const task = await updateTask(userId!, id, parsed.data);
+    await updateTask(userId!, id, parsed.data);
+    // Return the full task with history so clients don't need a second GET.
+    const task = await getTaskById(userId!, id);
     return NextResponse.json({ data: task });
   } catch {
     return NextResponse.json({ error: "Failed to update task" }, { status: 500 });

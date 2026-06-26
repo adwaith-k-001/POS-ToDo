@@ -10,28 +10,29 @@ import type {
 } from "@/types";
 
 export async function getOverviewStats(userId: string): Promise<OverviewStats> {
-  const base = { userId, parentTaskId: null };
-  const [total, completed, archived, active, overdue] = await Promise.all([
-    prisma.task.count({ where: base }),
-    prisma.task.count({ where: { ...base, status: "COMPLETED" } }),
-    prisma.task.count({ where: { ...base, status: "ARCHIVED" } }),
-    prisma.task.count({ where: { ...base, status: { in: ["TODO", "IN_PROGRESS"] } } }),
-    prisma.task.count({
-      where: {
-        ...base,
-        status: { in: ["TODO", "IN_PROGRESS"] },
-        deadline: { lt: new Date() },
-      },
-    }),
-  ]);
+  // Single query with conditional aggregation instead of 5 parallel round-trips.
+  const [row] = await prisma.$queryRaw<
+    Array<{ total: bigint; completed: bigint; archived: bigint; active: bigint; overdue: bigint }>
+  >`
+    SELECT
+      COUNT(*)                                                                                          AS total,
+      COUNT(*) FILTER (WHERE status = 'COMPLETED')                                                     AS completed,
+      COUNT(*) FILTER (WHERE status = 'ARCHIVED')                                                      AS archived,
+      COUNT(*) FILTER (WHERE status IN ('TODO', 'IN_PROGRESS'))                                        AS active,
+      COUNT(*) FILTER (WHERE status IN ('TODO', 'IN_PROGRESS') AND deadline < NOW())                   AS overdue
+    FROM "Task"
+    WHERE "userId" = ${userId} AND "parentTaskId" IS NULL
+  `;
 
+  const total     = Number(row.total);
+  const completed = Number(row.completed);
   return {
     totalCreated: total,
     totalCompleted: completed,
     completionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
-    activeTasks: active,
-    overdueTasks: overdue,
-    archivedTasks: archived,
+    activeTasks: Number(row.active),
+    overdueTasks: Number(row.overdue),
+    archivedTasks: Number(row.archived),
   };
 }
 

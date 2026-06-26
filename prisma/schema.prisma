@@ -96,6 +96,10 @@ model Task {
   goal    Goal?       @relation(fields: [goalId], references: [id])
   tags    TaskTag[]
   history TaskHistory[]
+
+  @@index([userId])
+  @@index([userId, status])
+  @@index([userId, deadline])
 }
 
 model Area {
@@ -140,6 +144,8 @@ model Goal {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   tasks       Task[]
+
+  @@index([userId])
 }
 
 model TaskHistory {
@@ -150,6 +156,8 @@ model TaskHistory {
   oldValue  String?
   newValue  String?
   timestamp DateTime      @default(now())
+
+  @@index([taskId])
 }
 
 model Habit {
@@ -160,6 +168,8 @@ model Habit {
   target  Int
   order   Int          @default(0)
   entries HabitEntry[]
+
+  @@index([userId])
 }
 
 model HabitEntry {
