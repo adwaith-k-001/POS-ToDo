@@ -5,6 +5,29 @@ Format: `## [Date] [Time IST] — Title` followed by what changed and why.
 
 ---
 
+## [2026-06-26] — SWR Client-Side Caching for All Data Hooks
+
+**Reason**: App still felt laggy on navigation because every page visit fired fresh API calls and showed loading spinners even for recently viewed data.
+
+### What changed
+
+Installed `swr@2.4.2` and replaced the `useState + useEffect + fetch` pattern in all five data-fetching hooks with `useSWR` (stale-while-revalidate).
+
+**Behavior before**: Navigate to Inbox → spinner → data loads. Navigate away. Navigate back → spinner again → data loads again.
+
+**Behavior after**: Navigate to Inbox → spinner → data loads. Navigate away. Navigate back → **cached data renders instantly** → revalidates in background silently.
+
+**Files changed:**
+- `src/lib/fetcher.ts` — shared fetcher function (single place for error handling)
+- `src/app/(app)/SWRProvider.tsx` — client component wrapping `SWRConfig` with `revalidateOnFocus: false` (no unnecessary refetches on tab switch for single-user app) and `errorRetryCount: 1`
+- `src/app/(app)/layout.tsx` — wraps children in `SWRProvider`
+- `src/hooks/useTasks.ts` — `useSWR` with `keepPreviousData: true` (no flicker when changing filters); mutations call `mutate()` for background revalidation instead of blocking `fetchTasks()`
+- `src/hooks/useAreas.ts`, `useTags.ts`, `useGoals.ts`, `useFormData.ts` — same pattern
+
+**Additional benefit**: `useFormData()` is called in multiple components on the same page (TaskList + TaskDetailClient + GoalDetailPage). SWR deduplicates the `/api/context` request — only one in-flight request, one shared cache entry.
+
+---
+
 ## [2026-06-26] — Performance: Measured Bottlenecks, Indexes, Region Config
 
 **Reason**: After the first round of performance fixes, slowness persisted. Ran a full measurement suite (`scripts/perf-test.mjs`) to get actual timings before making any changes.

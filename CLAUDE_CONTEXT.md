@@ -280,6 +280,9 @@ Default habits seeded per user on first login: Reading (30 min), Learning (30 mi
 
 ### Client-side data fetching patterns
 
-- **`useFormData()`** (`src/hooks/useFormData.ts`): fetches `{ areas, tags }` in one request from `GET /api/context`. Use this wherever you need areas + tags only for `TaskForm` dropdowns (no CRUD). Currently used in: `TaskList`, `UpcomingPage`, `TaskDetailClient`, `GoalDetailPage`.
+All hooks use **SWR** (`swr@2.4.2`). The shared fetcher is at `src/lib/fetcher.ts`. Global config is in `src/app/(app)/SWRProvider.tsx` (wraps the app layout).
+
+- **`useFormData()`** (`src/hooks/useFormData.ts`): fetches `{ areas, tags }` in one request from `GET /api/context`. Use this wherever you need areas + tags only for `TaskForm` dropdowns (no CRUD). Currently used in: `TaskList`, `UpcomingPage`, `TaskDetailClient`, `GoalDetailPage`. SWR deduplicates concurrent calls to the same endpoint — only one in-flight request even when multiple components call this hook.
 - **`useAreas()` / `useTags()`**: retain full CRUD methods. Use only in components that create/update/delete areas or tags (`AreasClient`, `TagsClient`).
 - Do not call `useAreas()` + `useTags()` together — use `useFormData()` instead to avoid duplicate API calls.
+- **Mutations**: all mutation functions (`createTask`, `updateArea`, etc.) call `mutate()` after the API call for background revalidation — the list updates without showing a loading state. `keepPreviousData: true` on `useTasks` prevents the list from going blank when filter parameters change.
