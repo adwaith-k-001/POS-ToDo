@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import useSWR from "swr";
+import { fetcher } from "@/lib/fetcher";
 import type { TaskWithRelations } from "@/types";
 import type { CreateTaskInput, UpdateTaskInput } from "@/lib/validations";
 
@@ -15,41 +16,30 @@ interface UseTasksOptions {
   dueAfter?: Date;
 }
 
+function buildTasksUrl(options: UseTasksOptions) {
+  const params = new URLSearchParams();
+  options.status?.forEach((s) => params.append("status", s));
+  if (options.areaId) params.set("areaId", options.areaId);
+  if (options.tagId) params.set("tagId", options.tagId);
+  if (options.goalId) params.set("goalId", options.goalId);
+  if (options.search) params.set("search", options.search);
+  if (options.inbox) params.set("inbox", "true");
+  if (options.includeArchived) params.set("includeArchived", "true");
+  if (options.dueBefore) params.set("dueBefore", options.dueBefore.toISOString());
+  if (options.dueAfter) params.set("dueAfter", options.dueAfter.toISOString());
+  return `/api/tasks?${params.toString()}`;
+}
+
 export function useTasks(options: UseTasksOptions = {}) {
-  const [tasks, setTasks] = useState<TaskWithRelations[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const url = buildTasksUrl(options);
 
-  const buildUrl = useCallback(() => {
-    const params = new URLSearchParams();
-    options.status?.forEach((s) => params.append("status", s));
-    if (options.areaId) params.set("areaId", options.areaId);
-    if (options.tagId) params.set("tagId", options.tagId);
-    if (options.goalId) params.set("goalId", options.goalId);
-    if (options.search) params.set("search", options.search);
-    if (options.inbox) params.set("inbox", "true");
-    if (options.includeArchived) params.set("includeArchived", "true");
-    if (options.dueBefore) params.set("dueBefore", options.dueBefore.toISOString());
-    if (options.dueAfter) params.set("dueAfter", options.dueAfter.toISOString());
-    return `/api/tasks?${params.toString()}`;
-  }, [options.status?.join(), options.areaId, options.tagId, options.goalId, options.search, options.inbox, options.includeArchived, options.dueBefore?.toISOString(), options.dueAfter?.toISOString()]);
+  const { data, error, isLoading, mutate } = useSWR<{ data: TaskWithRelations[] }>(
+    url,
+    fetcher,
+    { keepPreviousData: true }
+  );
 
-  const fetchTasks = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(buildUrl());
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error);
-      setTasks(json.data);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Unknown error");
-    } finally {
-      setLoading(false);
-    }
-  }, [buildUrl]);
-
-  useEffect(() => { fetchTasks(); }, [fetchTasks]);
+  const tasks = data?.data ?? [];
 
   const createTask = async (input: CreateTaskInput) => {
     const res = await fetch("/api/tasks", {
@@ -59,7 +49,7 @@ export function useTasks(options: UseTasksOptions = {}) {
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error);
-    await fetchTasks();
+    mutate(); // background revalidation — no loading state shown
     return json.data as TaskWithRelations;
   };
 
@@ -71,22 +61,31 @@ export function useTasks(options: UseTasksOptions = {}) {
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error);
-    await fetchTasks();
+    mutate();
     return json.data as TaskWithRelations;
   };
 
   const archiveTask = async (id: string) => {
     const res = await fetch(`/api/tasks/${id}`, { method: "DELETE" });
     if (!res.ok) throw new Error("Failed to archive task");
-    await fetchTasks();
+    mutate();
   };
 
   const permanentlyDeleteTask = async (id: string) => {
     const res = await fetch(`/api/tasks/${id}?permanent=true`, { method: "DELETE" });
     if (!res.ok) throw new Error("Failed to delete task");
-    await fetchTasks();
+    mutate();
   };
 
-  return { tasks, loading, error, refetch: fetchTasks, createTask, updateTask, archiveTask, permanentlyDeleteTask,
-    /** @deprecated use archiveTask */ deleteTask: archiveTask };
+  return {
+    tasks,
+    loading: isLoading,
+    error: error?.message ?? null,
+    refetch: () => mutate(),
+    createTask,
+    updateTask,
+    archiveTask,
+    permanentlyDeleteTask,
+    /** @deprecated use archiveTask */ deleteTask: archiveTask,
+  };
 }

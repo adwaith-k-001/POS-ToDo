@@ -1,25 +1,17 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import useSWR from "swr";
+import { fetcher } from "@/lib/fetcher";
 import type { AreaWithCount, TagWithCount } from "@/types";
 
 export function useFormData() {
-  const [areas, setAreas] = useState<AreaWithCount[]>([]);
-  const [tags, setTags] = useState<TagWithCount[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading } = useSWR<{ areas: AreaWithCount[]; tags: TagWithCount[] }>(
+    "/api/context",
+    fetcher
+  );
 
-  const fetchFormData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/context");
-      const json = await res.json();
-      setAreas(json.areas ?? []);
-      setTags(json.tags ?? []);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { fetchFormData(); }, [fetchFormData]);
-
-  return { areas, tags, loading };
+  return {
+    areas: data?.areas ?? [],
+    tags: data?.tags ?? [],
+    loading: isLoading,
+  };
 }

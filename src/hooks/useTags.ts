@@ -1,24 +1,16 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import useSWR from "swr";
+import { fetcher } from "@/lib/fetcher";
 import type { TagWithCount } from "@/types";
 import type { CreateTagInput, UpdateTagInput } from "@/lib/validations";
 
 export function useTags() {
-  const [tags, setTags] = useState<TagWithCount[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading, mutate } = useSWR<{ data: TagWithCount[] }>(
+    "/api/tags",
+    fetcher
+  );
 
-  const fetchTags = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/tags");
-      const json = await res.json();
-      setTags(json.data);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { fetchTags(); }, [fetchTags]);
+  const tags = data?.data ?? [];
 
   const createTag = async (input: CreateTagInput) => {
     const res = await fetch("/api/tags", {
@@ -28,7 +20,7 @@ export function useTags() {
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error);
-    await fetchTags();
+    mutate();
     return json.data;
   };
 
@@ -40,14 +32,14 @@ export function useTags() {
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error);
-    await fetchTags();
+    mutate();
     return json.data;
   };
 
   const deleteTag = async (id: string) => {
     await fetch(`/api/tags/${id}`, { method: "DELETE" });
-    await fetchTags();
+    mutate();
   };
 
-  return { tags, loading, refetch: fetchTags, createTag, updateTag, deleteTag };
+  return { tags, loading: isLoading, refetch: () => mutate(), createTag, updateTag, deleteTag };
 }
