@@ -9,22 +9,18 @@ import type {
   AnalyticsSummary,
 } from "@/types";
 
-export async function getOverviewStats(): Promise<OverviewStats> {
+export async function getOverviewStats(userId: string): Promise<OverviewStats> {
+  const base = { userId, parentTaskId: null };
   const [total, completed, archived, active, overdue] = await Promise.all([
-    prisma.task.count({ where: { parentTaskId: null } }),
-    prisma.task.count({ where: { status: "COMPLETED", parentTaskId: null } }),
-    prisma.task.count({ where: { status: "ARCHIVED", parentTaskId: null } }),
+    prisma.task.count({ where: base }),
+    prisma.task.count({ where: { ...base, status: "COMPLETED" } }),
+    prisma.task.count({ where: { ...base, status: "ARCHIVED" } }),
+    prisma.task.count({ where: { ...base, status: { in: ["TODO", "IN_PROGRESS"] } } }),
     prisma.task.count({
       where: {
-        status: { in: ["TODO", "IN_PROGRESS"] },
-        parentTaskId: null,
-      },
-    }),
-    prisma.task.count({
-      where: {
+        ...base,
         status: { in: ["TODO", "IN_PROGRESS"] },
         deadline: { lt: new Date() },
-        parentTaskId: null,
       },
     }),
   ]);
@@ -39,9 +35,9 @@ export async function getOverviewStats(): Promise<OverviewStats> {
   };
 }
 
-export async function getLatencyStats(): Promise<LatencyStats> {
+export async function getLatencyStats(userId: string): Promise<LatencyStats> {
   const tasks = await prisma.task.findMany({
-    where: { status: "COMPLETED", completedAt: { not: null }, parentTaskId: null },
+    where: { userId, status: "COMPLETED", completedAt: { not: null }, parentTaskId: null },
     select: { createdAt: true, completedAt: true },
   });
 
@@ -65,9 +61,10 @@ export async function getLatencyStats(): Promise<LatencyStats> {
   };
 }
 
-export async function getDeadlineStats(): Promise<DeadlineStats> {
+export async function getDeadlineStats(userId: string): Promise<DeadlineStats> {
   const tasks = await prisma.task.findMany({
     where: {
+      userId,
       status: "COMPLETED",
       completedAt: { not: null },
       deadline: { not: null },
@@ -76,9 +73,7 @@ export async function getDeadlineStats(): Promise<DeadlineStats> {
     select: { completedAt: true, deadline: true },
   });
 
-  if (!tasks.length) {
-    return { onTime: 0, late: 0, successRate: 0, averageDelayDays: null };
-  }
+  if (!tasks.length) return { onTime: 0, late: 0, successRate: 0, averageDelayDays: null };
 
   let onTime = 0;
   const delays: number[] = [];
@@ -103,8 +98,9 @@ export async function getDeadlineStats(): Promise<DeadlineStats> {
   };
 }
 
-export async function getAreaStats(): Promise<AreaStat[]> {
+export async function getAreaStats(userId: string): Promise<AreaStat[]> {
   const areas = await prisma.area.findMany({
+    where: { userId },
     include: {
       tasks: {
         where: { parentTaskId: null },
@@ -115,41 +111,34 @@ export async function getAreaStats(): Promise<AreaStat[]> {
 
   return areas.map((area) => {
     const tasks = area.tasks;
-    const completed = tasks.filter(
-      (t) => t.status === "COMPLETED" && t.completedAt
-    );
-    const days = completed.map((t) =>
-      differenceInDays(t.completedAt!, t.createdAt)
-    );
+    const completed = tasks.filter((t) => t.status === "COMPLETED" && t.completedAt);
+    const days = completed.map((t) => differenceInDays(t.completedAt!, t.createdAt));
 
     return {
       area,
       created: tasks.length,
       completed: completed.length,
       completionRate:
-        tasks.length > 0
-          ? Math.round((completed.length / tasks.length) * 100)
-          : 0,
+        tasks.length > 0 ? Math.round((completed.length / tasks.length) * 100) : 0,
       avgCompletionDays:
         days.length > 0
-          ? Math.round(
-              (days.reduce((a, b) => a + b, 0) / days.length) * 10
-            ) / 10
+          ? Math.round((days.reduce((a, b) => a + b, 0) / days.length) * 10) / 10
           : null,
     };
   });
 }
 
-export async function getTrends(days = 30): Promise<TrendPoint[]> {
+export async function getTrends(userId: string, days = 30): Promise<TrendPoint[]> {
   const since = subDays(new Date(), days);
 
   const [created, completed] = await Promise.all([
     prisma.task.findMany({
-      where: { createdAt: { gte: since }, parentTaskId: null },
+      where: { userId, createdAt: { gte: since }, parentTaskId: null },
       select: { createdAt: true },
     }),
     prisma.task.findMany({
       where: {
+        userId,
         completedAt: { gte: since },
         status: "COMPLETED",
         parentTaskId: null,
@@ -176,13 +165,13 @@ export async function getTrends(days = 30): Promise<TrendPoint[]> {
   return Object.values(points);
 }
 
-export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
+export async function getAnalyticsSummary(userId: string): Promise<AnalyticsSummary> {
   const [overview, latency, deadline, byArea, trends] = await Promise.all([
-    getOverviewStats(),
-    getLatencyStats(),
-    getDeadlineStats(),
-    getAreaStats(),
-    getTrends(30),
+    getOverviewStats(userId),
+    getLatencyStats(userId),
+    getDeadlineStats(userId),
+    getAreaStats(userId),
+    getTrends(userId, 30),
   ]);
 
   return { overview, latency, deadline, byArea, trends };

@@ -22,27 +22,34 @@ const goalInclude = {
   _count: { select: { tasks: true } },
 } satisfies Prisma.GoalInclude;
 
-export async function getGoals(status?: GoalStatus[]) {
+export async function getGoals(userId: string, status?: GoalStatus[]) {
   return prisma.goal.findMany({
-    where: status?.length ? { status: { in: status } } : undefined,
+    where: {
+      userId,
+      ...(status?.length ? { status: { in: status } } : {}),
+    },
     include: goalInclude,
     orderBy: { createdAt: "desc" },
   });
 }
 
-export async function getGoalById(id: string) {
-  return prisma.goal.findUnique({ where: { id }, include: goalInclude });
+export async function getGoalById(userId: string, id: string) {
+  return prisma.goal.findFirst({ where: { id, userId }, include: goalInclude });
 }
 
-export async function createGoal(input: {
-  title: string;
-  description?: string;
-  color?: string;
-  icon?: string | null;
-  targetDate?: string | null;
-}) {
+export async function createGoal(
+  userId: string,
+  input: {
+    title: string;
+    description?: string;
+    color?: string;
+    icon?: string | null;
+    targetDate?: string | null;
+  }
+) {
   return prisma.goal.create({
     data: {
+      userId,
       title: input.title,
       description: input.description,
       color: input.color ?? "#6366f1",
@@ -54,6 +61,7 @@ export async function createGoal(input: {
 }
 
 export async function updateGoal(
+  userId: string,
   id: string,
   input: Partial<{
     title: string;
@@ -64,8 +72,8 @@ export async function updateGoal(
     targetDate: string | null;
   }>
 ) {
-  return prisma.goal.update({
-    where: { id },
+  await prisma.goal.updateMany({
+    where: { id, userId },
     data: {
       ...input,
       targetDate:
@@ -75,12 +83,11 @@ export async function updateGoal(
             : null
           : undefined,
     },
-    include: goalInclude,
   });
+  return prisma.goal.findFirst({ where: { id, userId }, include: goalInclude });
 }
 
-export async function deleteGoal(id: string) {
-  // Detach tasks so they become inbox items
-  await prisma.task.updateMany({ where: { goalId: id }, data: { goalId: null } });
-  await prisma.goal.delete({ where: { id } });
+export async function deleteGoal(userId: string, id: string) {
+  await prisma.task.updateMany({ where: { goalId: id, userId }, data: { goalId: null } });
+  await prisma.goal.deleteMany({ where: { id, userId } });
 }

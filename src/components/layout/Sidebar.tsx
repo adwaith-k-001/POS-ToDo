@@ -1,15 +1,16 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Inbox, Sun, CalendarDays, CheckSquare,
-  Layers, Tag, BarChart2, Settings,
+  Layers, Tag, BarChart2, Settings, LogOut,
   Target, Repeat2, Calendar, FileText, DollarSign, Users, Bot,
-  ChevronRight, CheckCircle2,
+  ChevronRight, CheckCircle2, Grid3x3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { createClient } from "@/lib/supabase/client";
 
 interface NavItem {
   label: string;
@@ -26,6 +27,7 @@ const primaryNav: NavItem[] = [
   { label: "Goals", href: "/goals", icon: Target },
   { label: "Tasks", href: "/tasks", icon: CheckSquare },
   { label: "Completed", href: "/completed", icon: CheckCircle2 },
+  { label: "Tracker", href: "/tracker", icon: Grid3x3 },
   { label: "Areas", href: "/areas", icon: Layers },
   { label: "Tags", href: "/tags", icon: Tag },
 ];
@@ -82,7 +84,21 @@ function NavLink({ item }: { item: NavItem }) {
   );
 }
 
-export function Sidebar() {
+interface SidebarProps {
+  userEmail: string;
+}
+
+export function Sidebar({ userEmail }: SidebarProps) {
+  const router = useRouter();
+  const initial = userEmail.charAt(0).toUpperCase() || "?";
+
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
+
   return (
     <aside className="flex h-full w-60 shrink-0 flex-col border-r border-slate-800 bg-slate-950">
       {/* Logo */}
@@ -115,8 +131,15 @@ export function Sidebar() {
         </div>
       </nav>
 
-      {/* Settings */}
-      <div className="border-t border-slate-800 p-2">
+      {/* User + Settings + Logout */}
+      <div className="border-t border-slate-800 p-2 space-y-1">
+        <div className="flex items-center gap-3 px-3 py-2">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-700 text-xs font-medium text-slate-200">
+            {initial}
+          </div>
+          <span className="flex-1 truncate text-xs text-slate-400">{userEmail}</span>
+        </div>
+
         <Link
           href="/settings"
           className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-slate-500 hover:bg-slate-800 hover:text-slate-300 transition-colors"
@@ -124,6 +147,14 @@ export function Sidebar() {
           <Settings className="h-4 w-4" />
           Settings
         </Link>
+
+        <button
+          onClick={handleLogout}
+          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-slate-500 hover:bg-slate-800 hover:text-red-400 transition-colors"
+        >
+          <LogOut className="h-4 w-4" />
+          Sign out
+        </button>
       </div>
     </aside>
   );

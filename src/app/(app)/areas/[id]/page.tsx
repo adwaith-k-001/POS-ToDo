@@ -1,12 +1,17 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { getAreaById } from "@/services/area.service";
 import { TaskList } from "@/components/tasks/TaskList";
 import { ArrowLeft, Layers } from "lucide-react";
 import Link from "next/link";
 
 export default async function AreaDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
   const { id } = await params;
-  const area = await getAreaById(id);
+  const area = await getAreaById(user.id, id);
   if (!area) notFound();
 
   return (

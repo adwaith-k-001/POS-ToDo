@@ -25,7 +25,7 @@ export interface TaskFilters {
   tagId?: string;
   goalId?: string;
   parentTaskId?: string | null;
-  inbox?: boolean; // area is null AND parentTaskId is null
+  inbox?: boolean;
   search?: string;
   includeArchived?: boolean;
   onlyRecurring?: boolean;
@@ -33,8 +33,11 @@ export interface TaskFilters {
   dueAfter?: Date;
 }
 
-export async function getTasks(filters: TaskFilters = {}): Promise<TaskWithRelations[]> {
-  const where: Prisma.TaskWhereInput = {};
+export async function getTasks(
+  userId: string,
+  filters: TaskFilters = {}
+): Promise<TaskWithRelations[]> {
+  const where: Prisma.TaskWhereInput = { userId };
 
   if (filters.status?.length) {
     where.status = { in: filters.status };
@@ -69,7 +72,7 @@ export async function getTasks(filters: TaskFilters = {}): Promise<TaskWithRelat
   }
 
   if (filters.search) {
-    where.title = { contains: filters.search };
+    where.title = { contains: filters.search, mode: "insensitive" };
   }
 
   if (filters.onlyRecurring) {
@@ -91,9 +94,12 @@ export async function getTasks(filters: TaskFilters = {}): Promise<TaskWithRelat
   }) as Promise<TaskWithRelations[]>;
 }
 
-export async function getTaskById(id: string): Promise<TaskWithRelations | null> {
-  return prisma.task.findUnique({
-    where: { id },
+export async function getTaskById(
+  userId: string,
+  id: string
+): Promise<TaskWithRelations | null> {
+  return prisma.task.findFirst({
+    where: { id, userId },
     include: {
       ...taskInclude,
       history: { orderBy: { timestamp: "desc" } },
@@ -101,12 +107,16 @@ export async function getTaskById(id: string): Promise<TaskWithRelations | null>
   }) as Promise<TaskWithRelations | null>;
 }
 
-export async function createTask(input: CreateTaskInput): Promise<TaskWithRelations> {
+export async function createTask(
+  userId: string,
+  input: CreateTaskInput
+): Promise<TaskWithRelations> {
   const { tagIds, ...data } = input;
 
   const task = await prisma.task.create({
     data: {
       ...data,
+      userId,
       deadline: data.deadline ? new Date(data.deadline) : null,
       tags: tagIds.length
         ? { create: tagIds.map((tagId) => ({ tagId })) }
@@ -123,10 +133,11 @@ export async function createTask(input: CreateTaskInput): Promise<TaskWithRelati
 }
 
 export async function updateTask(
+  userId: string,
   id: string,
   input: UpdateTaskInput
 ): Promise<TaskWithRelations> {
-  const existing = await prisma.task.findUniqueOrThrow({ where: { id } });
+  const existing = await prisma.task.findFirstOrThrow({ where: { id, userId } });
   const { tagIds, ...data } = input;
 
   const historyEntries: Prisma.TaskHistoryCreateManyInput[] = [];
@@ -219,40 +230,25 @@ export async function updateTask(
       : []),
   ]);
 
-  // Spawn next occurrence for completed recurring tasks
   if (data.status === "COMPLETED" && existing.repeatEnabled && existing.repeatPattern) {
-    await spawnNextOccurrence(task as TaskWithRelations);
+    await spawnNextOccurrence(userId, task as TaskWithRelations);
   }
 
   return task as TaskWithRelations;
 }
 
-export async function archiveTask(id: string): Promise<void> {
-  await prisma.task.update({
-    where: { id },
-    data: { status: "ARCHIVED" },
-  });
-  await prisma.taskHistory.create({
-    data: { taskId: id, action: "ARCHIVED" },
-  });
+export async function archiveTask(userId: string, id: string): Promise<void> {
+  await prisma.task.updateMany({ where: { id, userId }, data: { status: "ARCHIVED" } });
+  await prisma.taskHistory.create({ data: { taskId: id, action: "ARCHIVED" } });
 }
 
-export async function permanentlyDeleteTask(id: string): Promise<void> {
-  // Cascade deletes handle TaskTag, TaskHistory, and subTasks via DB constraints.
-  // First detach any subtasks so they become standalone inbox items rather than disappearing.
-  await prisma.task.updateMany({
-    where: { parentTaskId: id },
-    data: { parentTaskId: null },
-  });
+export async function permanentlyDeleteTask(userId: string, id: string): Promise<void> {
+  await prisma.task.findFirstOrThrow({ where: { id, userId } });
+  await prisma.task.updateMany({ where: { parentTaskId: id }, data: { parentTaskId: null } });
   await prisma.task.delete({ where: { id } });
 }
 
-/** @deprecated use archiveTask */
-export async function deleteTask(id: string): Promise<void> {
-  return archiveTask(id);
-}
-
-async function spawnNextOccurrence(task: TaskWithRelations): Promise<void> {
+async function spawnNextOccurrence(userId: string, task: TaskWithRelations): Promise<void> {
   if (!task.repeatPattern) return;
 
   const now = new Date();
@@ -268,6 +264,7 @@ async function spawnNextOccurrence(task: TaskWithRelations): Promise<void> {
 
   await prisma.task.create({
     data: {
+      userId,
       title: task.title,
       description: task.description,
       priority: task.priority,
@@ -278,9 +275,7 @@ async function spawnNextOccurrence(task: TaskWithRelations): Promise<void> {
       repeatPattern: task.repeatPattern,
       deadline: nextDeadline,
       recurringParentId: task.recurringParentId ?? task.id,
-      tags: {
-        create: task.tags.map((tt) => ({ tagId: tt.tagId })),
-      },
+      tags: { create: task.tags.map((tt) => ({ tagId: tt.tagId })) },
     },
   });
 }

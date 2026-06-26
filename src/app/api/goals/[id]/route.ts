@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getGoalById, updateGoal, deleteGoal } from "@/services/goal.service";
+import { getAuthenticatedUser } from "@/lib/auth-utils";
 import { z } from "zod";
 
 const updateGoalSchema = z.object({
@@ -12,9 +13,12 @@ const updateGoalSchema = z.object({
 });
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { userId, errorResponse } = await getAuthenticatedUser();
+  if (errorResponse) return errorResponse;
+
   try {
     const { id } = await params;
-    const goal = await getGoalById(id);
+    const goal = await getGoalById(userId!, id);
     if (!goal) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json({ data: goal });
   } catch {
@@ -23,6 +27,9 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { userId, errorResponse } = await getAuthenticatedUser();
+  if (errorResponse) return errorResponse;
+
   try {
     const { id } = await params;
     const body = await req.json();
@@ -30,7 +37,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (!parsed.success) {
       return NextResponse.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 });
     }
-    const goal = await updateGoal(id, parsed.data);
+    const goal = await updateGoal(userId!, id, parsed.data);
     return NextResponse.json({ data: goal });
   } catch {
     return NextResponse.json({ error: "Failed to update goal" }, { status: 500 });
@@ -38,9 +45,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { userId, errorResponse } = await getAuthenticatedUser();
+  if (errorResponse) return errorResponse;
+
   try {
     const { id } = await params;
-    await deleteGoal(id);
+    await deleteGoal(userId!, id);
     return new NextResponse(null, { status: 204 });
   } catch {
     return NextResponse.json({ error: "Failed to delete goal" }, { status: 500 });

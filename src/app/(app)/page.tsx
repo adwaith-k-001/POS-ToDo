@@ -1,5 +1,7 @@
 export const dynamic = "force-dynamic";
-import { getOverviewStats, getTrends } from "@/services/analytics.service";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { getOverviewStats } from "@/services/analytics.service";
 import { getTasks } from "@/services/task.service";
 import { formatDate, isOverdue, PRIORITY_COLORS } from "@/lib/utils";
 import { CheckCircle2, Clock, TrendingUp, AlertTriangle, Circle, Archive, Activity } from "lucide-react";
@@ -25,10 +27,14 @@ async function StatCard({ label, value, icon: Icon, color }: {
 }
 
 export default async function DashboardPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
   const [stats, recentTasks, upcomingTasks] = await Promise.all([
-    getOverviewStats(),
-    getTasks({ status: ["TODO", "IN_PROGRESS"] }),
-    getTasks({
+    getOverviewStats(user.id),
+    getTasks(user.id, { status: ["TODO", "IN_PROGRESS"] }),
+    getTasks(user.id, {
       status: ["TODO", "IN_PROGRESS"],
       dueBefore: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       dueAfter: new Date(),
@@ -41,13 +47,11 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-slate-100">Dashboard</h1>
         <p className="text-sm text-slate-500 mt-1">Welcome back. Here&apos;s what&apos;s happening.</p>
       </div>
 
-      {/* Stats grid */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
         <StatCard label="Total Created" value={stats.totalCreated} icon={Circle} color="bg-slate-800 text-slate-400" />
         <StatCard label="Completed" value={stats.totalCompleted} icon={CheckCircle2} color="bg-green-900/40 text-green-400" />
@@ -57,9 +61,7 @@ export default async function DashboardPage() {
         <StatCard label="Archived" value={stats.archivedTasks} icon={Archive} color="bg-slate-800 text-slate-500" />
       </div>
 
-      {/* Two-column section */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Recent Active Tasks */}
         <div className="rounded-xl border border-slate-800 bg-slate-900 p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-slate-300">Active Tasks</h2>
@@ -88,7 +90,6 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Upcoming deadlines */}
         <div className="rounded-xl border border-slate-800 bg-slate-900 p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-slate-300">Upcoming (7 days)</h2>
@@ -113,7 +114,6 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Overdue section */}
       {overdueTasks.length > 0 && (
         <div className="rounded-xl border border-red-900/40 bg-red-950/20 p-5">
           <h2 className="text-sm font-semibold text-red-400 mb-3 flex items-center gap-2">

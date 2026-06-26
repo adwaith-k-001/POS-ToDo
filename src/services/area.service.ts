@@ -2,16 +2,17 @@ import { prisma } from "@/lib/prisma";
 import type { CreateAreaInput, UpdateAreaInput } from "@/lib/validations";
 import type { AreaWithCount } from "@/types";
 
-export async function getAreas(): Promise<AreaWithCount[]> {
+export async function getAreas(userId: string): Promise<AreaWithCount[]> {
   return prisma.area.findMany({
+    where: { userId },
     include: { _count: { select: { tasks: true } } },
     orderBy: { name: "asc" },
   });
 }
 
-export async function getAreaById(id: string) {
-  return prisma.area.findUnique({
-    where: { id },
+export async function getAreaById(userId: string, id: string) {
+  return prisma.area.findFirst({
+    where: { id, userId },
     include: {
       _count: { select: { tasks: true } },
       tasks: {
@@ -27,16 +28,16 @@ export async function getAreaById(id: string) {
   });
 }
 
-export async function createArea(input: CreateAreaInput) {
-  return prisma.area.create({ data: input });
+export async function createArea(userId: string, input: CreateAreaInput) {
+  return prisma.area.create({ data: { ...input, userId } });
 }
 
-export async function updateArea(id: string, input: UpdateAreaInput) {
-  return prisma.area.update({ where: { id }, data: input });
+export async function updateArea(userId: string, id: string, input: UpdateAreaInput) {
+  await prisma.area.updateMany({ where: { id, userId }, data: input });
+  return prisma.area.findFirst({ where: { id, userId } });
 }
 
-export async function deleteArea(id: string) {
-  // Unassign tasks before deleting area
-  await prisma.task.updateMany({ where: { areaId: id }, data: { areaId: null } });
-  return prisma.area.delete({ where: { id } });
+export async function deleteArea(userId: string, id: string) {
+  await prisma.task.updateMany({ where: { areaId: id, userId }, data: { areaId: null } });
+  await prisma.area.deleteMany({ where: { id, userId } });
 }
