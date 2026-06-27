@@ -55,6 +55,66 @@ A personal productivity OS for a single user (multi-account architecture, but no
 
 ---
 
+## Design System (PAIOS)
+
+The app uses a custom design system applied via CSS custom properties in `src/app/globals.css`.
+
+### Design tokens
+
+```css
+--accent: #D7AC61;          /* amber/gold — primary accent */
+--aRGB: 215, 172, 97;       /* accent as RGB components for rgba() */
+--soft: rgba(215,172,97,0.18);
+--bg: #0C0A08;              /* warm near-black background */
+--ink: #1A1611;             /* dark text on amber surfaces */
+--glass: rgba(255,255,255,0.13);  /* glassmorphism card background */
+--glass2: rgba(255,255,255,0.06); /* subtler glass (inputs, meta cells) */
+--ghi: rgba(255,255,255,0.16);    /* glass highlight */
+--t1: #F0EAD8;              /* primary text */
+--t2: #9B9482;              /* secondary text */
+--t3: #635E55;              /* tertiary/placeholder text */
+--font-serif: 'Newsreader', Georgia, serif;
+--font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+--font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+```
+
+### Fonts
+Loaded via `<link>` tags in `src/app/layout.tsx` (NOT `next/font/google`) — Newsreader's optical sizing axis (`opsz`) isn't supported by the Next.js font API.
+
+- **Newsreader** — headings (h1, h2), PAIOS logo, goal/task titles (serif elegance)
+- **IBM Plex Mono** — stat values, section labels (UPPERCASE tracking), tags, timestamps
+- **IBM Plex Sans** — body/default (set on `html, body`)
+
+### Ambient background layers (in `src/app/(app)/layout.tsx`)
+Three absolute-positioned divs at `z-index: 0`, with the app shell at `z-index: 1`:
+1. **Glow**: `radial-gradient(900px 700px at 60% 20%, rgba(215,172,97,0.18), transparent 60%)`
+2. **Hex pattern**: SVG hexagon tile at 48×84px, opacity 0.07
+3. **Grain**: SVG fractalNoise filter, opacity 0.055, `mixBlendMode: overlay`
+
+### Glassmorphism pattern
+```tsx
+style={{
+  background: "var(--glass)",
+  border: "1px solid rgba(215,172,97,0.16)",
+  borderRadius: "14px",
+  backdropFilter: "blur(20px)",
+  WebkitBackdropFilter: "blur(20px)",
+  boxShadow: "0 10px 30px rgba(0,0,0,0.22)",
+}}
+```
+
+### Styling conventions
+- **Use inline `style` attributes** for design token values — CSS variables work directly and are easier to read than Tailwind `bg-[var(--glass)]` syntax.
+- Tailwind utility classes are still fine for layout (flex, grid, gap-*, p-*, etc.).
+- Hover effects use `onMouseEnter`/`onMouseLeave` (change `borderColor`, `transform`) since CSS pseudo-classes don't work in inline styles.
+
+### Navigation active states (Sidebar)
+- `tasksActive` = pathname starts with `/tasks`, `/today`, `/upcoming`, `/completed`, `/inbox`
+- `goalsActive` = pathname starts with `/goals`, `/areas`, `/tags`
+- Active style: `background: "rgba(215,172,97,0.16)"`, `boxShadow: "inset 0 0 0 1px rgba(215,172,97,0.25)"`
+
+---
+
 ## Critical Version Gotchas
 
 ### Next.js 16

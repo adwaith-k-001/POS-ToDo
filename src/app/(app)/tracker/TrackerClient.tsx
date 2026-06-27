@@ -286,24 +286,24 @@ export function TrackerClient({
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "20px", marginBottom: "8px" }}>
         <div>
-          <h1 className="text-2xl font-bold text-slate-100">Tracker</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Monthly habit tracker</p>
+          <h1 style={{ fontFamily: "var(--font-serif)", fontSize: "30px", fontWeight: 600, color: "var(--t1)" }}>Tracker</h1>
+          <p style={{ fontSize: "13.5px", color: "var(--t3)", marginTop: "4px" }}>Non-negotiables, one month at a glance.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
           <button
             onClick={() => navigateMonth(-1)}
-            className="p-1.5 rounded-md hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
+            style={{ width: "32px", height: "32px", borderRadius: "9px", border: "1px solid rgba(215,172,97,0.16)", background: "var(--glass2)", color: "var(--t2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
-          <span className="text-sm font-semibold text-slate-200 w-28 text-center">
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "13px", color: "var(--t1)", minWidth: "120px", textAlign: "center" }}>
             {format(currentDate, "MMMM yyyy")}
           </span>
           <button
             onClick={() => navigateMonth(1)}
-            className="p-1.5 rounded-md hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
+            style={{ width: "32px", height: "32px", borderRadius: "9px", border: "1px solid rgba(215,172,97,0.16)", background: "var(--glass2)", color: "var(--t2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
           >
             <ChevronRight className="h-4 w-4" />
           </button>
@@ -313,9 +313,15 @@ export function TrackerClient({
       {/* Grid */}
       <div
         className={cn(
-          "overflow-x-auto rounded-xl border border-slate-800",
           navLoading && "opacity-50 pointer-events-none",
         )}
+        style={{
+          overflowX: "auto", borderRadius: "16px",
+          border: "1px solid rgba(215,172,97,0.16)",
+          background: "var(--glass)",
+          backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
+          boxShadow: "0 12px 36px rgba(0,0,0,0.28)",
+        }}
       >
         <table className="w-max border-collapse">
           <thead>

@@ -1,15 +1,12 @@
 "use client";
 import { useState, useMemo } from "react";
-import { Plus, Search, CheckCircle2, RotateCcw, Clock } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { TaskCard } from "@/components/tasks/TaskCard";
 import { TaskForm } from "@/components/tasks/TaskForm";
 import { useTasks } from "@/hooks/useTasks";
 import { useFormData } from "@/hooks/useFormData";
-import { cn, formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 import type { TaskWithRelations } from "@/types";
 
 type View = "today" | "upcoming" | "all" | "completed";
@@ -27,13 +24,11 @@ function getUpcomingBounds(range: UpcomingRange): { dueAfter: Date; dueBefore?: 
   const dueAfter = new Date(now);
   dueAfter.setDate(dueAfter.getDate() + 1);
   dueAfter.setHours(0, 0, 0, 0);
-
   if (range === "all") return { dueAfter };
-
   const dueBefore = new Date(now);
   if (range === "week") {
-    const daysUntilSunday = now.getDay() === 0 ? 6 : 7 - now.getDay();
-    dueBefore.setDate(now.getDate() + daysUntilSunday);
+    const d = now.getDay() === 0 ? 6 : 7 - now.getDay();
+    dueBefore.setDate(now.getDate() + d);
   } else if (range === "month") {
     dueBefore.setMonth(now.getMonth() + 1);
   } else {
@@ -44,11 +39,45 @@ function getUpcomingBounds(range: UpcomingRange): { dueAfter: Date; dueBefore?: 
 }
 
 const VIEWS: { key: View; label: string }[] = [
-  { key: "today", label: "Today" },
-  { key: "upcoming", label: "Upcoming" },
-  { key: "all", label: "All" },
+  { key: "today",     label: "Today" },
+  { key: "upcoming",  label: "Upcoming" },
+  { key: "all",       label: "All" },
   { key: "completed", label: "Completed" },
 ];
+
+const LIST_LABELS: Record<View, string> = {
+  today:     "DUE TODAY",
+  upcoming:  "UPCOMING",
+  all:       "ALL ACTIVE",
+  completed: "COMPLETED",
+};
+
+const EMPTY_MSGS: Record<View, string> = {
+  today:     "Nothing due today.",
+  upcoming:  "No upcoming tasks.",
+  all:       "No active tasks.",
+  completed: "No completed tasks yet.",
+};
+
+function pill(on: boolean): React.CSSProperties {
+  return {
+    padding: "7px 15px", borderRadius: "9px", fontSize: "13px", cursor: "pointer",
+    border: on ? "1px solid rgba(215,172,97,0.4)" : "1px solid rgba(215,172,97,0.14)",
+    background: on ? "rgba(215,172,97,0.16)" : "var(--glass2)",
+    color: on ? "var(--t1)" : "var(--t2)",
+    fontWeight: on ? 500 : 400,
+    transition: "all .2s", fontFamily: "var(--font-sans)",
+  };
+}
+
+function subPill(on: boolean): React.CSSProperties {
+  return {
+    padding: "5px 12px", borderRadius: "8px", fontSize: "12px", cursor: "pointer",
+    border: "none", background: on ? "rgba(215,172,97,0.16)" : "transparent",
+    color: on ? "var(--accent)" : "var(--t3)",
+    transition: "all .2s", fontFamily: "var(--font-sans)",
+  };
+}
 
 export default function TasksPage() {
   const [view, setView] = useState<View>("today");
@@ -87,24 +116,22 @@ export default function TasksPage() {
     await updateTask(task.id, { status: "TODO" });
   };
 
-  const emptyMessage = {
-    today: "Nothing due today.",
-    upcoming: "No upcoming tasks.",
-    all: "No active tasks.",
-    completed: search ? "No completed tasks match your search." : "No completed tasks yet.",
-  }[view];
-
   return (
-    <div className="flex flex-col gap-4">
+    <div style={{ display: "flex", flexDirection: "column" }}>
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <h1 className="text-xl font-semibold text-slate-100">Tasks</h1>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "20px", marginBottom: "18px" }}>
+        <h1 style={{ fontFamily: "var(--font-serif)", fontSize: "30px", fontWeight: 600, color: "var(--t1)" }}>Tasks</h1>
         {view !== "completed" && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="primary" size="sm">
-                <Plus className="h-4 w-4" /> New Task
-              </Button>
+              <button style={{
+                background: "var(--accent)", color: "var(--ink)", border: "none",
+                padding: "10px 18px", borderRadius: "10px", fontSize: "13.5px",
+                fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap",
+                boxShadow: "0 5px 18px rgba(215,172,97,0.4)",
+              }}>
+                + New Task
+              </button>
             </DialogTrigger>
             <DialogContent className="max-w-xl">
               <DialogHeader><DialogTitle>Create Task</DialogTitle></DialogHeader>
@@ -119,38 +146,18 @@ export default function TasksPage() {
         )}
       </div>
 
-      {/* View toggle */}
-      <div className="flex gap-1">
+      {/* View tabs */}
+      <div style={{ display: "flex", gap: "6px", marginBottom: "14px" }}>
         {VIEWS.map(({ key, label }) => (
-          <button
-            key={key}
-            onClick={() => setView(key)}
-            className={cn(
-              "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-              view === key
-                ? "bg-slate-800 text-slate-100"
-                : "text-slate-500 hover:bg-slate-800/60 hover:text-slate-300"
-            )}
-          >
-            {label}
-          </button>
+          <button key={key} onClick={() => setView(key)} style={pill(view === key)}>{label}</button>
         ))}
       </div>
 
-      {/* Upcoming range sub-buttons */}
+      {/* Upcoming range sub-tabs */}
       {view === "upcoming" && (
-        <div className="flex gap-1">
+        <div style={{ display: "flex", gap: "6px", marginBottom: "14px" }}>
           {(Object.keys(RANGE_LABELS) as UpcomingRange[]).map((r) => (
-            <button
-              key={r}
-              onClick={() => setUpcomingRange(r)}
-              className={cn(
-                "rounded px-2.5 py-1 text-xs font-medium transition-colors",
-                upcomingRange === r
-                  ? "bg-indigo-600/30 text-indigo-300"
-                  : "text-slate-600 hover:text-slate-400"
-              )}
-            >
+            <button key={r} onClick={() => setUpcomingRange(r)} style={subPill(upcomingRange === r)}>
               {RANGE_LABELS[r]}
             </button>
           ))}
@@ -158,67 +165,87 @@ export default function TasksPage() {
       )}
 
       {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
-        <Input
+      <div style={{
+        display: "flex", alignItems: "center", gap: "9px",
+        background: "var(--glass2)", border: "1px solid rgba(215,172,97,0.16)",
+        borderRadius: "10px", padding: "10px 14px",
+      }}>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ color: "var(--t3)", flexShrink: 0 }}>
+          <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.8" />
+          <path d="M20 20l-3.5-3.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        </svg>
+        <input
           placeholder="Search tasks…"
-          className="pl-8"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          style={{ background: "transparent", border: "none", outline: "none", color: "var(--t1)", fontSize: "13px", width: "100%", fontFamily: "var(--font-sans)" }}
         />
       </div>
 
-      {/* List */}
+      {/* Section label */}
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: "11px", letterSpacing: "0.06em", color: "var(--t3)", margin: "20px 0 12px" }}>
+        {LIST_LABELS[view]}{view === "all" && tasks.length > 0 ? ` · ${tasks.length}` : ""}
+      </div>
+
+      {/* Task list */}
       {loading ? (
-        <div className="space-y-2">
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-16 rounded-lg bg-slate-800/50 animate-pulse" />
+            <div key={i} style={{ height: "72px", borderRadius: "14px", background: "var(--glass2)" }} />
           ))}
         </div>
       ) : tasks.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-800 py-16 text-center">
-          <p className="text-slate-500 text-sm">{emptyMessage}</p>
+        <div style={{ border: "1px dashed rgba(215,172,97,0.3)", borderRadius: "14px", padding: "40px", textAlign: "center", background: "rgba(215,172,97,0.03)" }}>
+          <div style={{ fontSize: "13.5px", color: "var(--t2)" }}>{EMPTY_MSGS[view]}</div>
           {view !== "completed" && (
-            <Button variant="ghost" size="sm" className="mt-3" onClick={() => setDialogOpen(true)}>
-              <Plus className="h-4 w-4" /> Add task
-            </Button>
+            <button
+              onClick={() => setDialogOpen(true)}
+              style={{ marginTop: "12px", background: "transparent", border: "1px solid rgba(215,172,97,0.24)", borderRadius: "8px", padding: "7px 14px", fontSize: "12.5px", color: "var(--t2)", cursor: "pointer" }}
+            >
+              + Add task
+            </button>
           )}
         </div>
       ) : view === "completed" ? (
-        <div className="space-y-2">
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           {tasks.map((task) => (
             <div
               key={task.id}
               onClick={() => router.push(`/tasks/${task.id}`)}
-              className="group flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-900 px-4 py-3 cursor-pointer hover:border-slate-700 hover:bg-slate-800/60 transition-colors"
+              style={{
+                display: "flex", alignItems: "center", gap: "14px",
+                padding: "14px 18px", borderRadius: "14px", cursor: "pointer",
+                background: "var(--glass)", border: "1px solid rgba(215,172,97,0.14)",
+                backdropFilter: "blur(20px)", opacity: 0.7,
+              }}
             >
-              <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-400 line-through truncate">{task.title}</p>
-                <div className="flex items-center gap-3 mt-0.5">
+              <div style={{ width: "18px", height: "18px", borderRadius: "50%", background: "var(--accent)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                  <path d="M2.4 6.3l2.2 2.2 4.9-5.2" stroke="var(--ink)" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: "13.5px", color: "var(--t3)", textDecoration: "line-through", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{task.title}</p>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "3px" }}>
                   {task.completedAt && (
-                    <span className="flex items-center gap-1 text-xs text-slate-600">
-                      <Clock className="h-3 w-3" /> Completed {formatDate(task.completedAt)}
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--t3)" }}>
+                      Completed {formatDate(task.completedAt)}
                     </span>
                   )}
-                  {task.area && (
-                    <span className="text-xs" style={{ color: task.area.color }}>{task.area.name}</span>
-                  )}
+                  {task.area && <span style={{ fontSize: "11.5px", color: task.area.color }}>{task.area.name}</span>}
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 text-slate-400 hover:text-slate-200"
+              <button
                 onClick={(e) => handleReopen(e, task)}
+                style={{ background: "transparent", border: "1px solid rgba(215,172,97,0.2)", borderRadius: "7px", padding: "5px 10px", fontSize: "11.5px", color: "var(--t2)", cursor: "pointer", whiteSpace: "nowrap" }}
               >
-                <RotateCcw className="h-3.5 w-3.5" /> Reopen
-              </Button>
+                ↺ Reopen
+              </button>
             </div>
           ))}
         </div>
       ) : (
-        <div className="space-y-2">
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           {tasks.map((task) => (
             <TaskCard key={task.id} task={task} onComplete={handleComplete} />
           ))}

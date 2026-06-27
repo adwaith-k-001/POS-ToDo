@@ -1,17 +1,18 @@
 "use client";
 import { useRouter } from "next/navigation";
-import {
-  CheckCircle2, Circle, Clock, Tag, Layers, RepeatIcon,
-  ChevronRight, AlertCircle,
-} from "lucide-react";
-import { cn, formatDate, isOverdue, PRIORITY_COLORS } from "@/lib/utils";
+import { cn, formatDate, isOverdue } from "@/lib/utils";
 import type { TaskWithRelations } from "@/types";
-import { Badge } from "@/components/ui/badge";
+
+const PRIORITY_DOT: Record<string, string> = {
+  URGENT: "#D9544E",
+  HIGH:   "#D98A4E",
+  MEDIUM: "#D4B454",
+  LOW:    "#8A8576",
+};
 
 interface TaskCardProps {
   task: TaskWithRelations;
   onComplete?: (id: string) => void;
-  onArchive?: (id: string) => void;
   compact?: boolean;
 }
 
@@ -28,94 +29,123 @@ export function TaskCard({ task, onComplete, compact = false }: TaskCardProps) {
   return (
     <div
       onClick={() => router.push(`/tasks/${task.id}`)}
-      className={cn(
-        "group flex items-start gap-3 rounded-lg border border-slate-800 bg-slate-900 px-4 py-3 cursor-pointer transition-colors hover:border-slate-700 hover:bg-slate-800/60",
-        isDone && "opacity-60"
-      )}
+      style={{
+        display: "flex", alignItems: "flex-start", gap: "14px",
+        padding: "14px 18px", borderRadius: "14px", cursor: "pointer",
+        background: "var(--glass)",
+        border: "1px solid rgba(215,172,97,0.16)",
+        WebkitBackdropFilter: "blur(20px)",
+        backdropFilter: "blur(20px)",
+        boxShadow: "0 8px 24px rgba(0,0,0,0.22)",
+        transition: "border-color .2s, transform .15s",
+        opacity: isDone ? 0.6 : 1,
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLElement).style.borderColor = "rgba(215,172,97,0.38)";
+        (e.currentTarget as HTMLElement).style.transform = "translateY(-1px)";
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLElement).style.borderColor = "rgba(215,172,97,0.16)";
+        (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
+      }}
     >
       {/* Checkbox */}
       <button
         onClick={handleCheck}
-        className="mt-0.5 shrink-0 text-slate-500 hover:text-indigo-400 transition-colors"
         aria-label={isDone ? "Mark incomplete" : "Mark complete"}
+        style={{
+          flexShrink: 0, marginTop: "2px",
+          width: "18px", height: "18px", borderRadius: "50%",
+          border: isDone ? "none" : "1.8px solid rgba(215,172,97,0.45)",
+          background: isDone ? "var(--accent)" : "transparent",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          cursor: "pointer", transition: "border-color .2s, background .2s",
+        }}
       >
-        {isDone ? (
-          <CheckCircle2 className="h-5 w-5 text-green-500" />
-        ) : (
-          <Circle className="h-5 w-5" />
+        {isDone && (
+          <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+            <path d="M2.4 6.3l2.2 2.2 4.9-5.2" stroke="var(--ink)" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         )}
       </button>
 
       {/* Content */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span
-            className={cn(
-              "text-sm font-medium text-slate-100 truncate",
-              isDone && "line-through text-slate-500"
-            )}
-          >
-            {task.icon && <span className="mr-1">{task.icon}</span>}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{
+            fontSize: "13.5px", color: isDone ? "var(--t3)" : "var(--t1)",
+            textDecoration: isDone ? "line-through" : "none",
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          }}>
+            {task.icon && <span style={{ marginRight: "5px" }}>{task.icon}</span>}
             {task.title}
           </span>
-
-          {/* Priority dot */}
-          <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", {
-            "bg-red-500": task.priority === "URGENT",
-            "bg-orange-500": task.priority === "HIGH",
-            "bg-yellow-500": task.priority === "MEDIUM",
-            "bg-slate-600": task.priority === "LOW",
-          })} />
+          {task.priority && (
+            <span style={{
+              width: "6px", height: "6px", borderRadius: "50%", flexShrink: 0,
+              background: PRIORITY_DOT[task.priority] ?? PRIORITY_DOT.LOW,
+            }} />
+          )}
         </div>
 
         {!compact && (
-          <div className="mt-1.5 flex flex-wrap items-center gap-2">
-            {/* Deadline */}
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px", marginTop: "6px" }}>
             {task.deadline && (
-              <span className={cn("flex items-center gap-1 text-xs", overdue ? "text-red-400" : "text-slate-500")}>
-                {overdue ? <AlertCircle className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+              <span style={{
+                fontFamily: "var(--font-mono)", fontSize: "11px",
+                color: overdue ? "#D9544E" : "var(--t3)",
+                display: "flex", alignItems: "center", gap: "4px",
+              }}>
+                {overdue && (
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.7" />
+                    <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+                  </svg>
+                )}
                 {formatDate(task.deadline)}
               </span>
             )}
 
-            {/* Area */}
             {task.area && (
-              <span className="flex items-center gap-1 text-xs text-slate-500">
-                <Layers className="h-3 w-3" />
-                <span style={{ color: task.area.color }}>{task.area.name}</span>
+              <span style={{ fontSize: "11.5px", color: task.area.color ?? "var(--t3)" }}>
+                {task.area.name}
               </span>
             )}
 
-            {/* Tags */}
             {task.tags.slice(0, 2).map((tt) => (
-              <Badge key={tt.tagId} className="text-[10px] px-1.5 py-0" style={{ color: tt.tag.color, borderColor: `${tt.tag.color}40` }}>
-                {tt.tag.name}
-              </Badge>
+              <span key={tt.tagId} style={{
+                fontFamily: "var(--font-mono)", fontSize: "10.5px",
+                padding: "2px 8px", borderRadius: "6px",
+                color: tt.tag.color,
+                background: `${tt.tag.color}1c`,
+                border: `1px solid ${tt.tag.color}40`,
+              }}>
+                #{tt.tag.name}
+              </span>
             ))}
             {task.tags.length > 2 && (
-              <span className="text-xs text-slate-600">+{task.tags.length - 2}</span>
+              <span style={{ fontSize: "11px", color: "var(--t3)" }}>+{task.tags.length - 2}</span>
             )}
 
-            {/* Subtask count */}
             {(task._count?.subTasks ?? 0) > 0 && (
-              <span className="flex items-center gap-1 text-xs text-slate-500">
-                <ChevronRight className="h-3 w-3" />
+              <span style={{ fontSize: "11px", color: "var(--t3)" }}>
                 {task._count!.subTasks} subtasks
               </span>
             )}
 
-            {/* Recurring */}
             {task.repeatEnabled && (
-              <span className="text-xs text-indigo-400 flex items-center gap-1">
-                <RepeatIcon className="h-3 w-3" />
-                {task.repeatPattern?.toLowerCase()}
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--accent)" }}>
+                ↻ {task.repeatPattern?.toLowerCase()}
               </span>
             )}
           </div>
         )}
       </div>
 
-      <ChevronRight className="h-4 w-4 text-slate-700 shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+      {/* Chevron */}
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ color: "var(--t3)", flexShrink: 0, marginTop: "3px", opacity: 0.5 }}>
+        <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
     </div>
   );
 }

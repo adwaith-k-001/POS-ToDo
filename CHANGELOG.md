@@ -5,6 +5,79 @@ Format: `## [Date] [Time IST] — Title` followed by what changed and why.
 
 ---
 
+## [2026-06-27] — PAIOS Visual Redesign
+
+**Reason**: Full visual overhaul to match the PAIOS (Personal AI Operating System) design aesthetic: warm dark tones, amber/gold accent, glassmorphism surfaces, and a three-font typographic system.
+
+### What changed
+
+**Design system** (`src/app/globals.css`):
+- New CSS custom property token system: `--accent` (#D7AC61), `--bg` (#0C0A08), `--t1/t2/t3` text hierarchy, `--glass`/`--glass2` rgba backgrounds, `--ink` for on-amber text
+- Body background changed from slate to `#0C0A08` (warm near-black)
+- Scrollbar styled to match the warm palette
+
+**Typography** (`src/app/layout.tsx`):
+- Removed Geist font; added Google Fonts link tags for Newsreader (serif headings/logo), IBM Plex Mono (labels/stats/tags), IBM Plex Sans (body)
+- App title changed to "PAIOS"
+- Three CSS font variables: `--font-serif`, `--font-mono`, `--font-sans`
+
+**App layout** (`src/app/(app)/layout.tsx`):
+- Three ambient background layers: radial amber glow (60% 20%), SVG hexagonal tile pattern (opacity 0.07), SVG fractalNoise grain (opacity 0.055, mix-blend overlay)
+- Grid layout `248px 1fr` with full-height sidebar
+- Content max-width 960px, centered with padding
+
+**Sidebar** (`src/components/layout/Sidebar.tsx`):
+- Glassmorphism panel: `backdrop-filter: blur(26px) saturate(1.3)`, rgba amber border
+- PAIOS logo: amber square with "P" in Newsreader serif + "PERSONAL OS" subtitle
+- NavBtn active state: amber bg `rgba(215,172,97,0.16)` + inset ring shadow
+- goalsActive detects /goals + /areas + /tags; tasksActive detects /tasks + /today + /upcoming + /completed
+- Footer: initials avatar, displayName, Settings link, logout button
+
+**Task cards** (`src/components/tasks/TaskCard.tsx`):
+- Glassmorphism card with amber border and backdrop blur
+- Custom SVG checkmark (amber fill when complete, ring border when todo)
+- Priority dot colors: URGENT #D9544E, HIGH #D98A4E, MEDIUM #D4B454, LOW #8A8576
+- Tag pills in IBM Plex Mono with color-tinted backgrounds
+
+**Task list** (`src/components/tasks/TaskList.tsx`):
+- Newsreader serif heading (30px), amber primary "New Task" button
+- Glass2 search input, amber dashed empty state
+
+**Tasks page** (`src/app/(app)/tasks/page.tsx`):
+- `pill()` helper: amber active state for Today/Upcoming/All/Completed tabs
+- IBM Plex Mono section label (e.g., "DUE TODAY")
+
+**Goals** (`src/app/(app)/goals/GoalsClient.tsx`):
+- GoalCard: glassmorphism + absolute 4px color strip on left edge, Newsreader title
+- Amber-tinted progress bar track, Newsreader h1, amber "New Goal" button
+
+**Analytics** (`src/app/(app)/analytics/AnalyticsClient.tsx`):
+- StatCard glassmorphism, IBM Plex Mono value (28px)
+- SectionHeader IBM Plex Mono uppercase
+- Trend chart: amber line (completed), 50% amber (created), amber grid lines
+
+**Tracker** (`src/app/(app)/tracker/TrackerClient.tsx`):
+- Newsreader serif h1, glass2 nav buttons, glassmorphism grid container
+
+**Task detail** (`src/app/(app)/tasks/[id]/TaskDetailClient.tsx`):
+- Newsreader serif title (32px), MetaItem glass2 cards, monospace tag pills
+- History timeline with amber dots and amber connector lines
+- `ghostBtn` style: amber-bordered transparent buttons
+
+**Other pages**:
+- `AreasClient.tsx`: Newsreader h1 (30px)
+
+### Verification
+All 5 main pages (Inbox, Tasks, Goals, Analytics, Tracker) confirmed via Playwright screenshots:
+- Warm `#0C0A08` background with visible hex pattern and amber ambient glow ✅
+- PAIOS logo in sidebar, active nav amber highlight ✅
+- Newsreader serif headings on every page ✅
+- IBM Plex Mono stat labels and section headers ✅
+- Glassmorphism surfaces on cards and sidebar ✅
+- Amber accent buttons and borders ✅
+
+---
+
 ## [2026-06-26] — SWR Client-Side Caching for All Data Hooks
 
 **Reason**: App still felt laggy on navigation because every page visit fired fresh API calls and showed loading spinners even for recently viewed data.

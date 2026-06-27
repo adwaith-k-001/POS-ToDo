@@ -120,71 +120,81 @@ function GoalCard({ goal, onEdit, onDelete }: { goal: GoalWithTasks; onEdit: () 
 
   return (
     <div
-      className="group relative rounded-xl border border-slate-800 bg-slate-900 p-5 cursor-pointer hover:border-slate-700 hover:bg-slate-800/60 transition-colors"
+      style={{
+        position: "relative", display: "flex", gap: "16px",
+        padding: "20px 20px 20px 22px", borderRadius: "16px", cursor: "pointer",
+        background: "var(--glass)", border: "1px solid rgba(215,172,97,0.16)",
+        backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
+        boxShadow: "0 10px 30px rgba(0,0,0,0.22)", transition: "transform .2s, border-color .2s",
+      }}
       onClick={() => router.push(`/goals/${goal.id}`)}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)";
+        (e.currentTarget as HTMLElement).style.borderColor = "var(--accent)";
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
+        (e.currentTarget as HTMLElement).style.borderColor = "rgba(215,172,97,0.16)";
+      }}
     >
       {/* Color strip */}
-      <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl" style={{ backgroundColor: goal.color }} />
+      <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: "4px", borderRadius: "16px 0 0 16px", background: goal.color }} />
 
-      <div className="flex items-start gap-4 pl-2">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: `${goal.color}20` }}>
-          <Target className="h-5 w-5" style={{ color: goal.color }} />
-        </div>
+      {/* Icon */}
+      <div style={{
+        width: "42px", height: "42px", flexShrink: 0, borderRadius: "12px",
+        background: `${goal.color}20`, display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+        <Target style={{ width: "20px", height: "20px", color: goal.color }} />
+      </div>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-slate-100 truncate">{goal.title}</h3>
-            <ChevronRight className="h-4 w-4 text-slate-600 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-          </div>
-          {goal.description && (
-            <p className="mt-0.5 text-sm text-slate-500 line-clamp-2">{goal.description}</p>
-          )}
-
-          {/* Progress */}
-          <div className="mt-3 flex items-center gap-3">
-            <div className="flex-1 h-1.5 rounded-full bg-slate-800">
-              <div
-                className="h-1.5 rounded-full transition-all"
-                style={{ width: `${progress}%`, backgroundColor: goal.color }}
-              />
-            </div>
-            <span className="text-xs text-slate-500 shrink-0">
-              {done}/{total} tasks
-            </span>
-          </div>
-
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "12px" }}>
+          <span style={{ fontFamily: "var(--font-serif)", fontSize: "18px", fontWeight: 600, color: "var(--t1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{goal.title}</span>
           {goal.targetDate && (
-            <p className="mt-2 flex items-center gap-1 text-xs text-slate-500">
-              <Calendar className="h-3 w-3" /> Target: {formatDate(goal.targetDate)}
-            </p>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--t3)", whiteSpace: "nowrap", flexShrink: 0 }}>
+              {formatDate(goal.targetDate)}
+            </span>
           )}
         </div>
-
-        {/* Actions */}
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" onClick={(e) => e.stopPropagation()}>
-          <Button variant="ghost" size="icon-sm" onClick={onEdit}>
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="ghost" size="icon-sm" className="text-red-400 hover:text-red-300">
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete goal?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  &ldquo;{goal.title}&rdquo; will be deleted. Its tasks will move to your inbox.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={onDelete}>Delete</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+        {goal.description && (
+          <p style={{ fontSize: "12.5px", color: "var(--t3)", marginTop: "5px", lineHeight: 1.5 }}>{goal.description}</p>
+        )}
+        <div style={{ marginTop: "14px", height: "6px", borderRadius: "4px", background: "rgba(215,172,97,0.12)", overflow: "hidden" }}>
+          <div style={{ height: "100%", borderRadius: "4px", background: goal.color, width: `${progress}%`, transition: "width .4s" }} />
         </div>
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: "10.5px", color: "var(--t3)", marginTop: "8px" }}>
+          {done}/{total} tasks · {progress}%
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div style={{ display: "flex", gap: "4px", flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+        <button
+          onClick={onEdit}
+          style={{ background: "transparent", border: "none", padding: "6px", borderRadius: "8px", color: "var(--t3)", cursor: "pointer" }}
+        >
+          <Pencil style={{ width: "14px", height: "14px" }} />
+        </button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <button style={{ background: "transparent", border: "none", padding: "6px", borderRadius: "8px", color: "#D9544E", cursor: "pointer", opacity: 0.7 }}>
+              <Trash2 style={{ width: "14px", height: "14px" }} />
+            </button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete goal?</AlertDialogTitle>
+              <AlertDialogDescription>
+                &ldquo;{goal.title}&rdquo; will be deleted. Its tasks will move to your inbox.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={onDelete}>Delete</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
@@ -199,16 +209,23 @@ export function GoalsClient() {
   const completedGoals = goals.filter((g) => g.status === "COMPLETED");
 
   return (
-    <div className="flex flex-col gap-6">
+    <div style={{ display: "flex", flexDirection: "column" }}>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "20px", marginBottom: "8px" }}>
         <div>
-          <h1 className="text-xl font-semibold text-slate-100">Goals</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Long-term goals with tasks and subtasks.</p>
+          <h1 style={{ fontFamily: "var(--font-serif)", fontSize: "30px", fontWeight: 600, color: "var(--t1)" }}>Goals</h1>
+          <p style={{ fontSize: "13.5px", color: "var(--t3)", marginTop: "4px" }}>Long-term goals with tasks and subtasks.</p>
         </div>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
-            <Button variant="primary" size="sm"><Plus className="h-4 w-4" /> New Goal</Button>
+            <button style={{
+              background: "var(--accent)", color: "var(--ink)", border: "none",
+              padding: "10px 18px", borderRadius: "10px", fontSize: "13.5px",
+              fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap",
+              boxShadow: "0 5px 18px rgba(215,172,97,0.4)",
+            }}>
+              + New Goal
+            </button>
           </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader><DialogTitle>Create Goal</DialogTitle></DialogHeader>
@@ -222,21 +239,23 @@ export function GoalsClient() {
 
       {/* Active goals */}
       {loading ? (
-        <div className="space-y-3">
+        <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginTop: "22px" }}>
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-28 rounded-xl bg-slate-800/50 animate-pulse" />
+            <div key={i} style={{ height: "110px", borderRadius: "16px", background: "var(--glass2)" }} />
           ))}
         </div>
       ) : activeGoals.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-800 py-16 text-center">
-          <Target className="h-8 w-8 text-slate-700 mb-3" />
-          <p className="text-slate-500 text-sm">No active goals yet.</p>
-          <Button variant="ghost" size="sm" className="mt-3" onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4" /> Add your first goal
-          </Button>
+        <div style={{ border: "1px dashed rgba(215,172,97,0.3)", borderRadius: "14px", padding: "48px", textAlign: "center", background: "rgba(215,172,97,0.03)", marginTop: "22px" }}>
+          <p style={{ fontSize: "13.5px", color: "var(--t2)" }}>No active goals yet.</p>
+          <button
+            onClick={() => setCreateOpen(true)}
+            style={{ marginTop: "12px", background: "transparent", border: "1px solid rgba(215,172,97,0.24)", borderRadius: "8px", padding: "7px 14px", fontSize: "12.5px", color: "var(--t2)", cursor: "pointer" }}
+          >
+            + Add your first goal
+          </button>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginTop: "22px" }}>
           {activeGoals.map((goal) => (
             <GoalCard
               key={goal.id}
@@ -250,9 +269,9 @@ export function GoalsClient() {
 
       {/* Completed goals */}
       {completedGoals.length > 0 && (
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-slate-600 mb-3">Completed</p>
-          <div className="space-y-3 opacity-60">
+        <div style={{ marginTop: "24px" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: "10px", letterSpacing: "0.16em", color: "var(--t3)", marginBottom: "14px" }}>COMPLETED</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px", opacity: 0.6 }}>
             {completedGoals.map((goal) => (
               <GoalCard
                 key={goal.id}

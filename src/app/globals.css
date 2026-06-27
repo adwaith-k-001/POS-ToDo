@@ -2,57 +2,77 @@
 
 :root {
   color-scheme: dark;
+
+  /* PAIOS Design Tokens — warm dark amber theme */
+  --accent: #D7AC61;
+  --aRGB: 215, 172, 97;
+  --soft: rgba(215, 172, 97, 0.18);
+
+  --bg: #0C0A08;
+  --solid: #0C0A08;
+  --glass: rgba(255, 255, 255, 0.13);
+  --glass2: rgba(255, 255, 255, 0.06);
+  --ghi: rgba(255, 255, 255, 0.16);
+
+  --t1: #F0EAD8;
+  --t2: #9B9482;
+  --t3: #635E55;
+  --ink: #1A1611;
+  --line2: rgba(240, 234, 216, 0.18);
+
+  --font-serif: 'Newsreader', Georgia, serif;
+  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+
+  /* Legacy Radix / shadcn compat */
+  --background: 12 10 8;
+  --foreground: 240 234 216;
 }
 
 * {
   box-sizing: border-box;
-}
-
-html, body {
-  height: 100%;
   margin: 0;
   padding: 0;
-  background-color: #020617; /* slate-950 */
-  color: #f1f5f9; /* slate-100 */
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+html,
+body {
+  height: 100%;
+  background-color: var(--bg);
+  color: var(--t1);
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
-/* Thin scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #1e293b;
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+button {
+  font-family: var(--font-sans);
+  outline: none;
 }
 
-/* Radix animations */
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-@keyframes fade-out {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: rgba(150, 140, 120, 0.20); border-radius: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* Radix portal / dialog animations */
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fade-out { from { opacity: 1; } to { opacity: 0; } }
 @keyframes zoom-in {
   from { transform: translate(-50%, -50%) scale(0.95); }
-  to { transform: translate(-50%, -50%) scale(1); }
+  to   { transform: translate(-50%, -50%) scale(1); }
 }
 @keyframes zoom-out {
   from { transform: translate(-50%, -50%) scale(1); }
-  to { transform: translate(-50%, -50%) scale(0.95); }
+  to   { transform: translate(-50%, -50%) scale(0.95); }
 }
 
-[data-state=open].animate-in { animation: fade-in 150ms ease; }
+[data-state=open].animate-in   { animation: fade-in  150ms ease; }
 [data-state=closed].animate-out { animation: fade-out 100ms ease; }
-[data-state=open].zoom-in-95 { animation: zoom-in 150ms ease; }
+[data-state=open].zoom-in-95   { animation: zoom-in  150ms ease; }
 [data-state=closed].zoom-out-95 { animation: zoom-out 100ms ease; }
+
+/* shadcn / Radix dark-theme overrides */
+[data-radix-popper-content-wrapper],
+[role="dialog"],
+[role="alertdialog"] {
+  --tw-ring-color: rgba(215, 172, 97, 0.4);
+}

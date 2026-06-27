@@ -88,46 +88,54 @@ export function TaskDetailClient({ task: initialTask }: Props) {
 
   const latency = completionLatencyDays(task.createdAt, task.completedAt);
 
+  const ghostBtn: React.CSSProperties = {
+    background: "transparent", color: "var(--t2)",
+    border: "1px solid rgba(215,172,97,0.20)", padding: "8px 14px",
+    borderRadius: "9px", fontSize: "12.5px", cursor: "pointer",
+    display: "inline-flex", alignItems: "center", gap: "6px",
+  };
+
   return (
-    <div className="space-y-6">
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       {/* Back + Actions */}
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon-sm" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex-1" />
-        {task.status !== "ARCHIVED" ? (
-          <>
-            <Button variant="ghost" size="sm" onClick={() => setEditOpen(true)}>
-              <Edit2 className="h-4 w-4" /> Edit
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleComplete}>
-              {task.status === "COMPLETED" ? (
-                <><Circle className="h-4 w-4" /> Reopen</>
-              ) : (
-                <><CheckCircle2 className="h-4 w-4" /> Complete</>
-              )}
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleArchive}>
-              <Archive className="h-4 w-4" /> Archive
-            </Button>
-          </>
-        ) : (
-          <Button variant="outline" size="sm" onClick={handleRestore}>
-            <RotateCcw className="h-4 w-4" /> Restore
-          </Button>
-        )}
-        <DeleteConfirmDialog onConfirm={handlePermanentDelete} taskTitle={task.title} />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <button style={ghostBtn} onClick={() => router.back()}>
+          <ArrowLeft style={{ width: "15px", height: "15px" }} /> Back
+        </button>
+        <div style={{ display: "flex", gap: "8px" }}>
+          {task.status !== "ARCHIVED" ? (
+            <>
+              <button style={ghostBtn} onClick={() => setEditOpen(true)}>
+                <Edit2 style={{ width: "14px", height: "14px" }} /> Edit
+              </button>
+              <button style={ghostBtn} onClick={handleComplete}>
+                {task.status === "COMPLETED" ? (
+                  <><Circle style={{ width: "14px", height: "14px" }} /> Reopen</>
+                ) : (
+                  <><CheckCircle2 style={{ width: "14px", height: "14px" }} /> Complete</>
+                )}
+              </button>
+              <button style={ghostBtn} onClick={handleArchive}>
+                <Archive style={{ width: "14px", height: "14px" }} /> Archive
+              </button>
+            </>
+          ) : (
+            <button style={ghostBtn} onClick={handleRestore}>
+              <RotateCcw style={{ width: "14px", height: "14px" }} /> Restore
+            </button>
+          )}
+          <DeleteConfirmDialog onConfirm={handlePermanentDelete} taskTitle={task.title} />
+        </div>
       </div>
 
       {/* Title */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
+        <h1 style={{ fontFamily: "var(--font-serif)", fontSize: "32px", fontWeight: 600, color: "var(--t1)", lineHeight: 1.2, display: "flex", alignItems: "center", gap: "10px" }}>
           {task.icon && <span>{task.icon}</span>}
           {task.title}
         </h1>
         {task.description && (
-          <p className="mt-2 text-slate-400 text-sm leading-relaxed whitespace-pre-wrap">
+          <p style={{ marginTop: "10px", fontSize: "14px", color: "var(--t2)", lineHeight: 1.6, maxWidth: "640px", whiteSpace: "pre-wrap" }}>
             {task.description}
           </p>
         )}
@@ -178,48 +186,51 @@ export function TaskDetailClient({ task: initialTask }: Props) {
 
       {/* Tags */}
       {task.tags.length > 0 && (
-        <div>
-          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">Tags</p>
-          <div className="flex flex-wrap gap-2">
-            {task.tags.map((tt) => (
-              <Badge key={tt.tagId} style={{ color: tt.tag.color, borderColor: `${tt.tag.color}40` }}>
-                <Tag className="h-3 w-3 mr-1" /> {tt.tag.name}
-              </Badge>
-            ))}
-          </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+          {task.tags.map((tt) => (
+            <span key={tt.tagId} style={{
+              fontFamily: "var(--font-mono)", fontSize: "11.5px",
+              padding: "4px 11px", borderRadius: "7px",
+              color: tt.tag.color, background: `${tt.tag.color}1c`,
+              border: `1px solid ${tt.tag.color}40`,
+            }}>#{tt.tag.name}</span>
+          ))}
         </div>
       )}
 
-      <Separator />
+      <div style={{ height: "1px", background: "rgba(215,172,97,0.14)" }} />
 
       {/* Subtasks */}
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-semibold text-slate-300">
-            Subtasks {task.subTasks.length > 0 && `(${task.subTasks.length})`}
-          </p>
-          <Button variant="ghost" size="sm" onClick={() => setSubtaskOpen(true)}>
-            <Plus className="h-4 w-4" /> Add subtask
-          </Button>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
+          <h2 style={{ fontFamily: "var(--font-mono)", fontSize: "11px", letterSpacing: "0.16em", color: "var(--t2)" }}>
+            SUBTASKS{task.subTasks.length > 0 ? ` · ${task.subTasks.length}` : ""}
+          </h2>
+          <button
+            onClick={() => setSubtaskOpen(true)}
+            style={{ background: "transparent", border: "1px solid rgba(215,172,97,0.20)", borderRadius: "8px", padding: "6px 12px", fontSize: "12px", color: "var(--t2)", cursor: "pointer" }}
+          >
+            + Add subtask
+          </button>
         </div>
         {task.subTasks.length > 0 ? (
-          <div className="space-y-2">
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             {task.subTasks.map((sub) => (
               <TaskCard key={sub.id} task={sub} compact />
             ))}
           </div>
         ) : (
-          <p className="text-sm text-slate-600">No subtasks.</p>
+          <p style={{ fontSize: "13px", color: "var(--t3)" }}>No subtasks yet.</p>
         )}
       </div>
 
-      <Separator />
+      <div style={{ height: "1px", background: "rgba(215,172,97,0.14)" }} />
 
       {/* History */}
       {task.history && task.history.length > 0 && (
         <div>
-          <p className="text-sm font-semibold text-slate-300 mb-3">History</p>
-          <div className="space-y-2">
+          <h2 style={{ fontFamily: "var(--font-mono)", fontSize: "11px", letterSpacing: "0.16em", color: "var(--t2)", marginBottom: "16px" }}>HISTORY</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
             {task.history.map((h) => (
               <HistoryEntry key={h.id} entry={h} />
             ))}
@@ -273,8 +284,8 @@ export function TaskDetailClient({ task: initialTask }: Props) {
 
 function MetaItem({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-slate-800 bg-slate-900 px-4 py-3">
-      <p className="text-[11px] font-medium uppercase tracking-wider text-slate-600 mb-1">{label}</p>
+    <div style={{ background: "var(--glass2)", border: "1px solid rgba(215,172,97,0.14)", borderRadius: "12px", padding: "14px 16px" }}>
+      <p style={{ fontFamily: "var(--font-mono)", fontSize: "9.5px", letterSpacing: "0.14em", color: "var(--t3)", marginBottom: "7px" }}>{label}</p>
       {children}
     </div>
   );
@@ -284,9 +295,9 @@ function DeleteConfirmDialog({ onConfirm, taskTitle }: { onConfirm: () => void; 
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300 hover:bg-red-950/40">
-          <Trash2 className="h-4 w-4" /> Delete
-        </Button>
+        <button style={{ background: "transparent", color: "#D9544E", border: "1px solid rgba(217,84,78,0.3)", padding: "8px 14px", borderRadius: "9px", fontSize: "12.5px", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+          <Trash2 style={{ width: "14px", height: "14px" }} /> Delete
+        </button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
@@ -307,15 +318,20 @@ function DeleteConfirmDialog({ onConfirm, taskTitle }: { onConfirm: () => void; 
 
 function HistoryEntry({ entry }: { entry: TaskHistory }) {
   return (
-    <div className="flex items-start gap-3 text-sm">
-      <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-slate-700 shrink-0" />
-      <div className="flex-1">
-        <span className="text-slate-400">{HISTORY_LABELS[entry.action] ?? entry.action}</span>
-        {entry.oldValue && entry.newValue && (
-          <span className="text-slate-500"> · <span className="line-through">{entry.oldValue}</span> → {entry.newValue}</span>
-        )}
+    <div style={{ display: "flex", alignItems: "flex-start", gap: "14px", paddingBottom: "18px", position: "relative" }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
+        <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: "var(--accent)", marginTop: "4px" }} />
+        <span style={{ width: "1px", flex: 1, background: "rgba(215,172,97,0.2)", marginTop: "4px" }} />
       </div>
-      <span className="text-xs text-slate-600 shrink-0">{formatRelative(entry.timestamp)}</span>
+      <div style={{ flex: 1, display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "12px" }}>
+        <span style={{ fontSize: "13px", color: "var(--t1)" }}>
+          {HISTORY_LABELS[entry.action] ?? entry.action}
+          {entry.oldValue && entry.newValue && (
+            <span style={{ color: "var(--t3)" }}> · <span style={{ textDecoration: "line-through" }}>{entry.oldValue}</span> → {entry.newValue}</span>
+          )}
+        </span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: "10.5px", color: "var(--t3)", whiteSpace: "nowrap" }}>{formatRelative(entry.timestamp)}</span>
+      </div>
     </div>
   );
 }

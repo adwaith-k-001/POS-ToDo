@@ -10,16 +10,21 @@ interface Props { data: AnalyticsSummary; }
 
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900 p-5">
-      <p className="text-xs font-medium uppercase tracking-wider text-slate-500">{label}</p>
-      <p className="mt-2 text-2xl font-bold text-slate-100">{value ?? "—"}</p>
-      {sub && <p className="text-xs text-slate-500 mt-0.5">{sub}</p>}
+    <div style={{
+      background: "var(--glass)", border: "1px solid rgba(215,172,97,0.16)",
+      borderRadius: "14px", padding: "18px",
+      backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)",
+      boxShadow: "0 10px 30px rgba(0,0,0,0.22)",
+    }}>
+      <p style={{ fontFamily: "var(--font-mono)", fontSize: "9px", letterSpacing: "0.13em", color: "var(--t3)" }}>{label}</p>
+      <p style={{ fontFamily: "var(--font-mono)", fontSize: "28px", fontWeight: 500, color: "var(--t1)", marginTop: "8px", letterSpacing: "-0.01em" }}>{value ?? "—"}</p>
+      {sub && <p style={{ fontSize: "11px", color: "var(--t3)", marginTop: "4px" }}>{sub}</p>}
     </div>
   );
 }
 
 function SectionHeader({ title }: { title: string }) {
-  return <h2 className="text-base font-semibold text-slate-200 mb-4">{title}</h2>;
+  return <div style={{ fontFamily: "var(--font-mono)", fontSize: "11px", letterSpacing: "0.14em", color: "var(--t2)", margin: "30px 0 14px" }}>{title.toUpperCase()}</div>;
 }
 
 export function AnalyticsClient({ data }: Props) {
@@ -31,10 +36,10 @@ export function AnalyticsClient({ data }: Props) {
   }));
 
   return (
-    <div className="space-y-10">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-100">Analytics</h1>
-        <p className="text-sm text-slate-500 mt-1">Your productivity at a glance.</p>
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      <div style={{ marginBottom: "8px" }}>
+        <h1 style={{ fontFamily: "var(--font-serif)", fontSize: "30px", fontWeight: 600, color: "var(--t1)" }}>Analytics</h1>
+        <p style={{ fontSize: "13.5px", color: "var(--t3)", marginTop: "4px" }}>Your productivity at a glance. Trends, not judgments.</p>
       </div>
 
       {/* Overview */}
@@ -78,20 +83,25 @@ export function AnalyticsClient({ data }: Props) {
       {/* Trends chart */}
       <section>
         <SectionHeader title="30-Day Trend" />
-        <div className="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div style={{
+          background: "var(--glass)", border: "1px solid rgba(215,172,97,0.16)",
+          borderRadius: "16px", padding: "24px",
+          backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
+          boxShadow: "0 12px 36px rgba(0,0,0,0.24)",
+        }}>
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-              <XAxis dataKey="date" stroke="#475569" tick={{ fontSize: 11 }} tickLine={false} />
-              <YAxis stroke="#475569" tick={{ fontSize: 11 }} tickLine={false} allowDecimals={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(215,172,97,0.10)" />
+              <XAxis dataKey="date" stroke="var(--t3)" tick={{ fontSize: 11, fill: "var(--t3)", fontFamily: "IBM Plex Mono" }} tickLine={false} />
+              <YAxis stroke="var(--t3)" tick={{ fontSize: 11, fill: "var(--t3)", fontFamily: "IBM Plex Mono" }} tickLine={false} allowDecimals={false} />
               <Tooltip
-                contentStyle={{ backgroundColor: "#0f172a", border: "1px solid #1e293b", borderRadius: 8 }}
-                labelStyle={{ color: "#94a3b8", fontSize: 12 }}
+                contentStyle={{ backgroundColor: "#1A1611", border: "1px solid rgba(215,172,97,0.28)", borderRadius: 10 }}
+                labelStyle={{ color: "var(--t2)", fontSize: 12 }}
                 itemStyle={{ fontSize: 12 }}
               />
-              <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
-              <Line type="monotone" dataKey="created" stroke="#6366f1" dot={false} strokeWidth={2} name="Created" />
-              <Line type="monotone" dataKey="completed" stroke="#22c55e" dot={false} strokeWidth={2} name="Completed" />
+              <Legend iconType="circle" wrapperStyle={{ fontSize: 12, color: "var(--t2)" }} />
+              <Line type="monotone" dataKey="created" stroke="rgba(215,172,97,0.5)" dot={false} strokeWidth={2} name="Created" />
+              <Line type="monotone" dataKey="completed" stroke="#D7AC61" dot={false} strokeWidth={2} name="Completed" />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -101,40 +111,36 @@ export function AnalyticsClient({ data }: Props) {
       {byArea.length > 0 && (
         <section>
           <SectionHeader title="By Area" />
-          <div className="space-y-3">
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {byArea.map(({ area, created, completed, completionRate, avgCompletionDays }) => (
-              <div key={area.id} className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">{area.icon}</span>
-                    <span className="font-medium text-slate-200">{area.name}</span>
+              <div key={area.id} style={{
+                background: "var(--glass)", border: "1px solid rgba(215,172,97,0.16)",
+                borderRadius: "14px", padding: "18px",
+                backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    {area.icon && <span style={{ fontSize: "18px" }}>{area.icon}</span>}
+                    <span style={{ fontSize: "14.5px", color: "var(--t1)" }}>{area.name}</span>
                   </div>
-                  <span className="text-sm font-semibold" style={{ color: area.color }}>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "13px", fontWeight: 600, color: area.color }}>
                     {completionRate}%
                   </span>
                 </div>
-                <div className="grid grid-cols-3 gap-3 text-center">
-                  <div>
-                    <p className="text-lg font-bold text-slate-100">{created}</p>
-                    <p className="text-xs text-slate-500">Created</p>
-                  </div>
-                  <div>
-                    <p className="text-lg font-bold text-slate-100">{completed}</p>
-                    <p className="text-xs text-slate-500">Completed</p>
-                  </div>
-                  <div>
-                    <p className="text-lg font-bold text-slate-100">
-                      {avgCompletionDays !== null ? `${avgCompletionDays}d` : "—"}
-                    </p>
-                    <p className="text-xs text-slate-500">Avg time</p>
-                  </div>
+                <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+                  {[
+                    { label: "Created", val: created },
+                    { label: "Completed", val: completed },
+                    { label: "Avg time", val: avgCompletionDays !== null ? `${avgCompletionDays}d` : "—" },
+                  ].map(({ label, val }) => (
+                    <div key={label} style={{ flex: 1, textAlign: "center" }}>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: "18px", color: "var(--t1)" }}>{val}</div>
+                      <div style={{ fontSize: "11px", color: "var(--t3)", marginTop: "2px" }}>{label}</div>
+                    </div>
+                  ))}
                 </div>
-                {/* Progress bar */}
-                <div className="mt-3 h-1.5 w-full rounded-full bg-slate-800">
-                  <div
-                    className="h-1.5 rounded-full transition-all"
-                    style={{ width: `${completionRate}%`, backgroundColor: area.color }}
-                  />
+                <div style={{ height: "7px", borderRadius: "4px", background: "rgba(215,172,97,0.10)", overflow: "hidden" }}>
+                  <div style={{ height: "100%", borderRadius: "4px", background: area.color, width: `${completionRate}%` }} />
                 </div>
               </div>
             ))}

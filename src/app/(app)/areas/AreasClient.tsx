@@ -34,8 +34,8 @@ export function AreasClient() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-slate-100">Areas</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Broad life categories for your tasks.</p>
+          <h1 style={{ fontFamily: "var(--font-serif)", fontSize: "30px", fontWeight: 600, color: "var(--t1)" }}>Areas</h1>
+          <p style={{ fontSize: "13.5px", color: "var(--t3)", marginTop: "4px" }}>Broad life categories for your tasks.</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
